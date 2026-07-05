@@ -9,8 +9,8 @@ const listaDeContatos = contatos.contacts;
 const rows = listaDeContatos;
 const columns = [
     {field: "name", headerName: "Nome"},
-    {field: "email", headerName: "E-mail"},
-    {field: "phone", headerName: "Telefone"},
+    {field: "email", headerName: "Email"},
+    {field: "phone", headerName: "Phone"},
     {field: "situation", headerName: "Status"},
 ];
 const paginationModel = {page: 0, pageSize: 5};
