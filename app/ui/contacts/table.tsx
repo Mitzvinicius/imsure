@@ -5,8 +5,7 @@ import {DataGrid} from "@mui/x-data-grid";
 import {Contact} from "@/app/lib/definitions";
 
 export default function ContactsTable(contatos: { contacts: Contact[] }) {
-const listaDeContatos = contatos.contacts;
-const rows = listaDeContatos;
+const rows = contatos.contacts;
 const columns = [
     {field: "name", headerName: "Nome"},
     {field: "email", headerName: "E-mail"},
