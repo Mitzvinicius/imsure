@@ -41,7 +41,61 @@ RLS ativo em tudo. Modelo de autorização: **dono da `conta` controla tudo abai
 - Tailwind não está de fato ativo (falta `@import "tailwindcss"` em algum CSS) — só afeta `app/page.tsx` (a página inicial padrão do `create-next-app`, não usada de verdade).
 - Ainda não existem: `usuario_corretora` (convite de equipe), `cargos`, domínio de seguros de verdade (contatos reais ligados a `corretoras`, negociações, apólices, sinistros).
 
-## Como o usuário gosta de trabalhar (importante)
-O usuário (Mitz) está aprendendo a programar e prefere método socrático: **não quer código pronto entregue de primeira** para conceitos que ele está aprendendo — prefere pseudocódigo/Portugol, perguntas guiadas, e tentar escrever ele mesmo antes de eu revisar. Boilerplate repetitivo e configuração de infraestrutura (bibliotecas, banco, etc.) podem ser feitos diretamente quando ele pedir explicitamente ("implementa pra mim").
+# CLAUDE.md — imsure
 
-Perfil: forte em lógica de programação e modelagem de banco relacional (vem do Bubble), ainda desenvolvendo sintaxe de JS/TS/Python/React/Next.js e ferramentas (Docker, deploy).
+> Este arquivo é lido por inteiro em TODA sessão. Mantenha-o curto: só o que é
+> verdade em qualquer parte do projeto e que o Claude não consegue deduzir
+> sozinho olhando o código. Detalhes de "como fazer X" vivem nas skills
+> em `.claude/skills/` — aqui só ficam os ponteiros e as invariantes.
+
+## Stack
+
+- Next.js (App Router) + TypeScript
+- Material UI (MUI)
+- Stripe (pagamentos)
+- Supabase (Postgres + RLS + Auth)
+
+## Invariantes não-negociáveis
+
+Estas regras nunca devem ser violadas, independente da tarefa. Para reforço
+real (não apenas instrução), as mais críticas também estão protegidas por
+hooks/CI — ver `.claude/hooks/`.
+
+- Server Components são o padrão. `'use client'` só nas folhas da árvore que
+  realmente precisam de interatividade.
+- Toda tabela do Supabase exposta via API tem RLS habilitado antes do deploy.
+- `auth.uid()` em policies sempre encapsulado em `(select auth.uid())`.
+- Webhooks do Stripe são sempre idempotentes (checagem + registro na mesma
+  transação do efeito de negócio).
+- Toda entidade criada via Meta Ads (campanha, ad set, ad) nasce em estado
+  PAUSADO. Ativação exige confirmação humana explícita — nunca automatize.
+- Nunca commitar segredos (`.env*` sempre no `.gitignore`).
+
+## Onde encontrar cada padrão
+
+O conhecimento detalhado de cada domínio vive em skills — o Claude Code as
+carrega automaticamente quando a tarefa é relevante. Não duplique esse
+conteúdo aqui.
+
+| Domínio | Skill |
+|---|---|
+| Server/Client Components, RSC, composição | `nextjs-app-router` |
+| Organização de pastas e imports (FSD) | `fsd-architecture` |
+| Tema MUI, Emotion cache, Pigment CSS | `mui-styling` |
+| Checkout, assinaturas, webhooks | `stripe-integration` |
+| Automação de campanhas Meta Ads | `meta-ads-automation` |
+| Policies de acesso ao banco | `supabase-rls` |
+| Branching de banco, busca vetorial | `neon-pgvector` |
+| Metadata, Core Web Vitals, JSON-LD | `seo-web-vitals` |
+
+## Comandos do projeto
+
+- `npm run dev` — ambiente local
+- `npm run lint` — lint (rode antes de reportar qualquer tarefa concluída)
+- `npm run test` — testes
+- `npm run build` — build de produção (rode antes de qualquer deploy)
+
+## Convenções de commit
+
+- Conventional Commits (`feat:`, `fix:`, `chore:`, ...)
+- PRs pequenos, um propósito por PR
