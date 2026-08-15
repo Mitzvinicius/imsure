@@ -67,8 +67,6 @@ hooks/CI — ver `.claude/hooks/`.
 - `auth.uid()` em policies sempre encapsulado em `(select auth.uid())`.
 - Webhooks do Stripe são sempre idempotentes (checagem + registro na mesma
   transação do efeito de negócio).
-- Toda entidade criada via Meta Ads (campanha, ad set, ad) nasce em estado
-  PAUSADO. Ativação exige confirmação humana explícita — nunca automatize.
 - Nunca commitar segredos (`.env*` sempre no `.gitignore`).
 
 ## Onde encontrar cada padrão
@@ -83,10 +81,7 @@ conteúdo aqui.
 | Organização de pastas e imports (FSD) | `fsd-architecture` |
 | Tema MUI, Emotion cache, Pigment CSS | `mui-styling` |
 | Checkout, assinaturas, webhooks | `stripe-integration` |
-| Automação de campanhas Meta Ads | `meta-ads-automation` |
 | Policies de acesso ao banco | `supabase-rls` |
-| Branching de banco, busca vetorial | `neon-pgvector` |
-| Metadata, Core Web Vitals, JSON-LD | `seo-web-vitals` |
 
 ## Comandos do projeto
 
