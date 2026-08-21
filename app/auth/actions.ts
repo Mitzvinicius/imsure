@@ -13,7 +13,7 @@ export async function createNewUser({
     password: string;
 }) {
     const cookieStore = await cookies();
-    const supabase = createClient(cookieStore);
+    const supabase = await createClient();
 
     const { error } = await supabase.auth.signUp({
         email,
@@ -39,7 +39,7 @@ export async function signIn({
     password: string;
 }) {
     const cookieStore = await cookies();
-    const supabase = createClient(cookieStore);
+    const supabase = await createClient();
 
     const { error } = await supabase.auth.signInWithPassword({
         email,

@@ -12,7 +12,7 @@ function mensagemErroContato(error: { code?: string; message: string }) {
 
 export async function criarConta({ nome }: { nome: string }) {
     const cookieStore = await cookies();
-    const supabase = createClient(cookieStore);
+    const supabase = await createClient();
     const usuario = await supabase.auth.getUser();
 
     if (!usuario.data.user) {
@@ -64,7 +64,7 @@ export async function atualizarDadosCorretora({
     registroSusep: string;
 }) {
     const cookieStore = await cookies();
-    const supabase = createClient(cookieStore);
+    const supabase = await createClient();
 
     const { error } = await supabase
         .from("corretoras")
@@ -85,7 +85,7 @@ export async function salvarRamosAtuacao({
     ramos: string[];
 }) {
     const cookieStore = await cookies();
-    const supabase = createClient(cookieStore);
+    const supabase = await createClient();
 
     const { error } = await supabase
         .from("corretoras")
@@ -106,7 +106,7 @@ export async function salvarFluxoVendas({
     etapas: string[];
 }) {
     const cookieStore = await cookies();
-    const supabase = createClient(cookieStore);
+    const supabase = await createClient();
 
     const { data: fluxoExistente } = await supabase
         .from("fluxos")
@@ -156,7 +156,7 @@ export async function selecionarPlano({
     planoId: string;
 }) {
     const cookieStore = await cookies();
-    const supabase = createClient(cookieStore);
+    const supabase = await createClient();
 
     const { data: corretora, error: erroCorretora } = await supabase
         .from("corretoras")
@@ -181,7 +181,7 @@ export async function selecionarPlano({
 
 export async function concluirOnboarding({ corretoraId }: { corretoraId: string }) {
     const cookieStore = await cookies();
-    const supabase = createClient(cookieStore);
+    const supabase = await createClient();
 
     const { error } = await supabase
         .from("corretoras")
