@@ -5,7 +5,7 @@ import AccountsPage from "./AccountsPage";
 
 export default async function ContasPage() {
     const cookieStore = await cookies();
-    const supabase = createClient(cookieStore);
+    const supabase = await createClient();
 
     const { data: { user } } = await supabase.auth.getUser();
 
