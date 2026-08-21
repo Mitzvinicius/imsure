@@ -137,8 +137,7 @@ export default function AccountsPage({ accounts, nomeUsuario }: { accounts: Acco
             router.push(`/onboarding/${acc.corretoraId}`);
             return;
         }
-        // A navegação real por tenant (ex: /contas/[id]/negocios) ainda não existe.
-        alert('Entrando na conta "' + acc.nome + '" (ainda não implementado)');
+        router.push(`/corretoras/${acc.corretoraId}/funis`);
     }
 
     function accountCreated() {

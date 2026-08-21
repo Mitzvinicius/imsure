@@ -81,6 +81,46 @@ Decisão: usar MUI (Material UI) pra ícones e componentes em geral, no projeto 
 ### Cuidado com nomes de ícone do MUI
 Vários nomes de ícone "outline" seguem o padrão `NomeOutlined` (ex: `WorkOutlined`, `MailOutlined`), **não** `NomeOutline`. Isso já causou alguns erros de import nesta sessão — vale checar a pasta `node_modules/@mui/icons-material` quando um ícone não for encontrado, em vez de adivinhar o nome.
 
+## Migração de contatos pro banco
+
+A feature de contatos existia antes da integração com Supabase, usando um array mockado (`placeholder_data.ts`, com campos em inglês: `name`, `phone`, `situation`...). Migrada pra uma tabela `contatos` de verdade, escopada por `corretora_id`, com RLS no mesmo padrão de `fluxos`/`etapas` (posse via cadeia de FKs até `contas.owner_usuario_id`). Os 10 contatos mockados viraram um seed real no banco.
+
+Os nomes de campo viraram português (`nome`, `telefone`, `situacao`...) pra ficar consistente com o resto do schema — isso quebrou o `type Contact` antigo, que foi atualizado junto.
+
+## Tela de Funis (negócios/oportunidades)
+
+Construída a partir de um protótipo do Claude Design (`Funil de Vendas.html` + `app.jsx`/`components.jsx`/`data.jsx`/`deal-detail.jsx`/`views.jsx`). Kanban + Lista, com uma tabela `negocios` real (não é estado local/mock) ligada a `etapas` (do funil configurado no onboarding), `contatos` e `usuarios` (vendedor).
+
+### Diferenças deliberadas em relação ao protótipo do Claude Design
+O protótipo tem um painel de "Tweaks" (`tweaks-panel.jsx`) — isso é uma ferramenta do **próprio Claude Design** pra ajustar densidade/estilo/cantos ao vivo enquanto se olha o protótipo, não é feature de produto. Não foi portado. Além disso:
+- Sidebar reduzida a só as rotas que existem (`Funis`, `Contatos`) + um seletor de conta/corretora (dropdown), em vez dos ~10 itens de navegação do protótipo (a maioria não tem rota ainda).
+- Vendedor **é mostrado de verdade** no card (avatar + nome), não removido — decisão explícita do usuário: "não estamos desenvolvendo um sistema mono usuário". Isso exigiu abrir uma policy de `SELECT` em `usuarios`, escopada a "vendedores de negócios que eu possuo" (ver seção de RLS).
+- Etapas do funil são as que o usuário configurou no onboarding (dinâmicas), não as 4 fixas do protótipo — e não existe o bucket especial "fechado" escondido da lista de colunas do protótipo.
+- "Ramo" nos formulários usa `corretora.ramos_atuacao` (escolhido no onboarding) em vez de uma lista fixa — reaproveita uma decisão que o usuário já tinha tomado.
+
+### Filtros avançados
+Popover com cliente/tipo/ramo/seguradora/criado-a-partir-de, igual o protótipo — **exceto** o campo "cotação válida até" do protótipo, que não tem campo correspondente no nosso schema (não implementado).
+
+### Detalhe do negócio: state de página, não modal
+Decisão explícita do usuário: o detalhe do negócio (`DealDetail.tsx`) **substitui** o conteúdo principal da página (igual o comportamento real do HTML do Claude Design — `selectedDeal ? <DealDetail/> : <KanbanView/>`), controlado por **search param na URL** (`?negocio=<id>`), não por um `Dialog`/modal. Isso permite compartilhar o link direto de um negócio com outra pessoa que tenha acesso à mesma corretora (útil quando `usuario_corretora` existir).
+
+A edição de dados do **contato** (nome/e-mail/telefone/CPF-CNPJ/profissão) acontece **direto na tela do negócio**, não só em `/contatos` — decisão explícita: evita trocar de página pra correções básicas, e serve como confirmação visual de que o negócio está vinculado à pessoa certa. `atualizarContato` e `atualizarNegocio` são chamados juntos (`Promise.all`) no botão Salvar.
+
+### Vendedor sempre = usuário logado (por enquanto)
+Criar um negócio sempre atribui `vendedor_usuario_id = auth.uid()` — não existe seletor de vendedor no formulário, porque hoje só o dono acessa a corretora. Isso é uma limitação temporária, não uma decisão de produto: o campo/coluna já existe pensando em quando `usuario_corretora` for implementado.
+
+## Contato: pessoa física ou jurídica, e máscaras de formulário
+
+`contatos.cpf_cnpj` é **um campo só** pra CPF ou CNPJ (não dois campos separados) — decisão do usuário: "o contato pode ser uma empresa também [...] é mais eficiente manter um campo pros dois". A detecção de tipo é automática pela quantidade de dígitos digitados (≤11 = CPF/pessoa física, >11 = CNPJ/pessoa jurídica), e o resultado fica salvo em `contatos.tipo_pessoa` (`'fisica' | 'juridica'`).
+
+**Unicidade**: `unique (corretora_id, cpf_cnpj)` no banco — não é só validação de tela. Postgres permite múltiplos `NULL` numa coluna com `unique` (CPF/CNPJ é opcional), então isso não bloqueia contatos sem documento. A Server Action (`criarNegocio` com `novoContato`, e `atualizarContato`) captura o código de erro `23505` (unique_violation) do Postgres e devolve uma mensagem amigável em vez do erro cru.
+
+**Máscaras** (`app/corretoras/[corretoraId]/funis/masks.ts`, funções puras sem dependência externa): telefone formata `(XX) XXXXX-XXXX` (adivinha celular vs. fixo pela quantidade de dígitos), CPF/CNPJ formata e troca de máscara sozinho ao ultrapassar 11 dígitos, e-mail valida formato (mesmo regex usado nas telas de auth).
+
+**Por que isso virou pauta**: sem restrição nenhuma nesses campos, texto colado/ditado por voz (aparentemente Windows Voice Typing, que insere `+` entre grupos de números reconhecidos) ia direto pro banco sem filtro — bug relatado pelo usuário com print mostrando algo como `65041+948+96206+149+8040` no campo de telefone.
+
+**Pendente**: validação do dígito verificador real de CPF/CNPJ (hoje só confere se tem 11 ou 14 dígitos) — perguntado ao usuário, sem resposta ainda.
+
 ## Pendências técnicas conhecidas
 
 1. **`contas` sem policy de `UPDATE`** — `selecionarPlano` está quebrado (RLS bloqueia a troca de plano, silenciosamente, sem erro visível). Precisa de uma policy tipo:
@@ -92,5 +132,7 @@ Vários nomes de ícone "outline" seguem o padrão `NomeOutlined` (ex: `WorkOutl
    ```
 2. **Tailwind não está de fato ativo** — falta `@import "tailwindcss";` em algum CSS carregado. Só afeta `app/page.tsx` (a página inicial padrão do `create-next-app`, não usada de verdade no fluxo real).
 3. **`app/dashboard/page.tsx`** e **`app/ui/opportunities/table.tsx`** parecem ser rascunho/stub de outra pessoa (colega trabalhando em paralelo na navegação/sidebar) — não documentados, não mexer sem confirmar.
-4. **`app/contatos`** (feature de contatos/CRM) ainda usa dados mockados (`placeholder_data.ts`), não foi migrada pro banco — é um trabalho anterior à integração com Supabase.
-5. Faltam, na ordem de dependência do roadmap original: `cargos` + `modulos_sistema`, `usuario_corretora`, `usuario_conta_acesso_global`, domínio de seguros de verdade (`contatos` ligados a `corretoras`, `negociacoes`, `apolices`, `endossos`, `sinistros`), enforcement de limites de plano na aplicação.
+4. **CPF/CNPJ sem validação de dígito verificador** — só confere quantidade de dígitos (11/14), não o cálculo real de validade. Perguntado ao usuário se vale a pena implementar.
+5. **Filtro "cotação válida até"** do protótipo do funil não foi implementado — sem campo correspondente no schema.
+6. **Turbopack (dev) pode travar** com "Jest worker encountered N child process exceptions" depois de muitas mudanças de arquivos/pastas de uma vez — não é bug de código (build de produção sempre passou limpo nessas ocasiões), é cache do dev server ficando inconsistente. Resolve com `rm -rf .next` + reiniciar `npm run dev`.
+7. Faltam, na ordem de dependência do roadmap original: `cargos` + `modulos_sistema`, `usuario_corretora`, `usuario_conta_acesso_global`, resto do domínio de seguros (`apolices`, `endossos`, `sinistros` — `contatos` e `negocios` já existem), enforcement de limites de plano na aplicação.

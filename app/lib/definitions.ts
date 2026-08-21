@@ -1,10 +1,9 @@
 export type Contact = {
     id: string;
-    name: string;
-    email: string;
-    phone: string;
-    birth_date: string;
-    gender: "masculino" | "feminino";
-    situation: "cliente" | "lead" | "ex-cliente";
+    nome: string;
+    email: string | null;
+    telefone: string | null;
+    data_nascimento: string | null;
+    genero: string | null;
+    situacao: "cliente" | "lead" | "ex-cliente";
 };
-
