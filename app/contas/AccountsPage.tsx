@@ -61,7 +61,7 @@ function AccountCard({ acc, onOpen }: { acc: Account; onOpen: (acc: Account) => 
                 </Stack>
                 <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between', pt: 1.5, borderTop: '1px solid', borderColor: 'divider' }}>
                     <Chip
-                        size="small"
+                        size="medium"
                         icon={acc.papel === 'owner' ? <WorkOutlineIcon /> : <GroupsOutlinedIcon />}
                         label={acc.papel === 'owner' ? 'Proprietário' : 'Convidado'}
                         color={acc.papel === 'owner' ? 'secondary' : 'default'}

@@ -1,4 +1,4 @@
-import type { createClient } from "@/utils/supabase/server";
+import { createClient } from "@/utils/supabase/server";
 
 type SupabaseServerClient = ReturnType<typeof createClient>;
 
@@ -10,7 +10,8 @@ export type ContaComCorretora = {
     onboardingConcluido: boolean;
 };
 
-export async function getContasComCorretoras(supabase: SupabaseServerClient): Promise<ContaComCorretora[]> {
+export async function getContasComCorretoras(): Promise<ContaComCorretora[]> {
+    const supabase = await createClient();
     const { data: contas } = await supabase
         .from("contas")
         .select("id, nome")

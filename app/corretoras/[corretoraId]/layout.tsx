@@ -13,8 +13,7 @@ export default async function CorretoraLayout({
     params: Promise<{ corretoraId: string }>;
 }) {
     const { corretoraId } = await params;
-    const cookieStore = await cookies();
-    const supabase = createClient(cookieStore);
+    const supabase = await createClient();
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -34,7 +33,7 @@ export default async function CorretoraLayout({
         redirect(`/onboarding/${corretoraId}`);
     }
 
-    const accounts = await getContasComCorretoras(supabase);
+    const accounts = await getContasComCorretoras();
 
     return (
         <Box sx={{ display: "flex", minHeight: "100vh" }}>

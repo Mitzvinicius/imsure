@@ -1,7 +1,6 @@
-import { cookies } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
-import ContatosPage from "./ContatosPage";
 import { Contact } from "@/app/lib/definitions";
+import ContatosPage from "./ContatosPage";
 
 export default async function Page({
     params,
@@ -9,8 +8,7 @@ export default async function Page({
     params: Promise<{ corretoraId: string }>;
 }) {
     const { corretoraId } = await params;
-    const cookieStore = await cookies();
-    const supabase = createClient(cookieStore);
+    const supabase = await createClient();
 
     const { data: contatos } = await supabase
         .from("contatos")
@@ -18,5 +16,7 @@ export default async function Page({
         .eq("corretora_id", corretoraId)
         .order("nome", { ascending: true });
 
-    return <ContatosPage contacts={(contatos ?? []) as Contact[]} />;
+    return (
+        <ContatosPage contacts={(contatos ?? []) as Contact[]} />
+    );
 }

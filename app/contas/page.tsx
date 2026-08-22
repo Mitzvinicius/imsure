@@ -5,7 +5,6 @@ import { getContasComCorretoras } from "@/app/lib/queries";
 import AccountsPage from "./AccountsPage";
 
 export default async function ContasPage() {
-    const cookieStore = await cookies();
     const supabase = await createClient();
 
     const { data: { user } } = await supabase.auth.getUser();
@@ -14,7 +13,7 @@ export default async function ContasPage() {
         redirect("/auth");
     }
 
-    const contas = await getContasComCorretoras(supabase);
+    const contas = await getContasComCorretoras();
 
     const accounts = contas.map((conta) => ({
         id: conta.id,

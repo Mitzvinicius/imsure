@@ -11,7 +11,6 @@ function mensagemErroContato(error: { code?: string; message: string }) {
 }
 
 export async function criarConta({ nome }: { nome: string }) {
-    const cookieStore = await cookies();
     const supabase = await createClient();
     const usuario = await supabase.auth.getUser();
 
@@ -63,7 +62,6 @@ export async function atualizarDadosCorretora({
     cnpj: string;
     registroSusep: string;
 }) {
-    const cookieStore = await cookies();
     const supabase = await createClient();
 
     const { error } = await supabase
@@ -84,7 +82,6 @@ export async function salvarRamosAtuacao({
     corretoraId: string;
     ramos: string[];
 }) {
-    const cookieStore = await cookies();
     const supabase = await createClient();
 
     const { error } = await supabase
@@ -105,7 +102,6 @@ export async function salvarFluxoVendas({
     corretoraId: string;
     etapas: string[];
 }) {
-    const cookieStore = await cookies();
     const supabase = await createClient();
 
     const { data: fluxoExistente } = await supabase
@@ -155,7 +151,6 @@ export async function selecionarPlano({
     corretoraId: string;
     planoId: string;
 }) {
-    const cookieStore = await cookies();
     const supabase = await createClient();
 
     const { data: corretora, error: erroCorretora } = await supabase
@@ -180,7 +175,6 @@ export async function selecionarPlano({
 }
 
 export async function concluirOnboarding({ corretoraId }: { corretoraId: string }) {
-    const cookieStore = await cookies();
     const supabase = await createClient();
 
     const { error } = await supabase
@@ -201,8 +195,7 @@ export async function definirFunilAtivo({
     corretoraId: string;
     fluxoId: string;
 }) {
-    const cookieStore = await cookies();
-    const supabase = createClient(cookieStore);
+    const supabase = await createClient();
 
     const { error: erroDesativar } = await supabase
         .from("fluxos")
@@ -231,8 +224,7 @@ export async function buscarContatos({
     corretoraId: string;
     query: string;
 }) {
-    const cookieStore = await cookies();
-    const supabase = createClient(cookieStore);
+    const supabase = await createClient();
 
     const { data, error } = await supabase
         .from("contatos")
@@ -273,8 +265,7 @@ export async function criarNegocio({
     valor: number | null;
     indicacao: boolean;
 }) {
-    const cookieStore = await cookies();
-    const supabase = createClient(cookieStore);
+    const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
@@ -330,8 +321,7 @@ export async function moverNegocio({
     negocioId: string;
     etapaId: string;
 }) {
-    const cookieStore = await cookies();
-    const supabase = createClient(cookieStore);
+    const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
@@ -356,7 +346,6 @@ export async function moverNegocio({
     if (atual) {
         const usuarioNome = (user.user_metadata?.nome as string | undefined) ?? user.email ?? "Você";
         await registrarHistoricoNegocio(
-            supabase,
             negocioId,
             user.id,
             usuarioNome,
@@ -409,14 +398,10 @@ function formatarValorHistorico(campo: keyof RegistroNegocioEditavel, valor: unk
 }
 
 async function registrarHistoricoNegocio(
-    supabase: ReturnType<typeof createClient>,
-    negocioId: string,
-    usuarioId: string,
-    usuarioNome: string,
-    anterior: RegistroNegocioEditavel,
-    novo: RegistroNegocioEditavel,
+    negocioId: string, usuarioId: string, usuarioNome: string, anterior: RegistroNegocioEditavel, novo: RegistroNegocioEditavel,
 ) {
     let nomesEtapa: Record<string, string> = {};
+    const supabase = await createClient();
     if (anterior.etapa_id !== novo.etapa_id) {
         const { data } = await supabase
             .from("etapas")
@@ -464,8 +449,7 @@ export async function atualizarNegocio({
     indicacao: boolean;
     fechadoEm: string | null;
 }) {
-    const cookieStore = await cookies();
-    const supabase = createClient(cookieStore);
+    const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
@@ -500,7 +484,6 @@ export async function atualizarNegocio({
     if (atual) {
         const usuarioNome = (user.user_metadata?.nome as string | undefined) ?? user.email ?? "Você";
         await registrarHistoricoNegocio(
-            supabase,
             negocioId,
             user.id,
             usuarioNome,
@@ -529,8 +512,7 @@ export async function atualizarContato({
     tipoPessoa: "fisica" | "juridica";
     profissoes: string[];
 }) {
-    const cookieStore = await cookies();
-    const supabase = createClient(cookieStore);
+    const supabase = await createClient();
 
     const { error } = await supabase
         .from("contatos")
@@ -544,8 +526,7 @@ export async function atualizarContato({
 }
 
 export async function deletarNegocio({ negocioId }: { negocioId: string }) {
-    const cookieStore = await cookies();
-    const supabase = createClient(cookieStore);
+    const supabase = await createClient();
 
     const { error } = await supabase
         .from("negocios")
@@ -559,8 +540,7 @@ export async function deletarNegocio({ negocioId }: { negocioId: string }) {
 }
 
 export async function listarAnotacoes({ negocioId }: { negocioId: string }) {
-    const cookieStore = await cookies();
-    const supabase = createClient(cookieStore);
+    const supabase = await createClient();
 
     const { data, error } = await supabase
         .from("negocio_anotacoes")
@@ -575,8 +555,7 @@ export async function listarAnotacoes({ negocioId }: { negocioId: string }) {
 }
 
 export async function criarAnotacao({ negocioId, texto }: { negocioId: string; texto: string }) {
-    const cookieStore = await cookies();
-    const supabase = createClient(cookieStore);
+    const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
@@ -602,8 +581,7 @@ export async function criarAnotacao({ negocioId, texto }: { negocioId: string; t
 }
 
 export async function deletarAnotacao({ anotacaoId }: { anotacaoId: string }) {
-    const cookieStore = await cookies();
-    const supabase = createClient(cookieStore);
+    const supabase = await createClient();
 
     const { error } = await supabase
         .from("negocio_anotacoes")
@@ -617,8 +595,7 @@ export async function deletarAnotacao({ anotacaoId }: { anotacaoId: string }) {
 }
 
 export async function listarHistorico({ negocioId }: { negocioId: string }) {
-    const cookieStore = await cookies();
-    const supabase = createClient(cookieStore);
+    const supabase = await createClient();
 
     const { data, error } = await supabase
         .from("negocio_historico")
@@ -636,8 +613,7 @@ const BUCKET_ANEXOS = "negocio-anexos";
 const TAMANHO_MAXIMO_ANEXO = 20 * 1024 * 1024;
 
 export async function listarAnexos({ negocioId }: { negocioId: string }) {
-    const cookieStore = await cookies();
-    const supabase = createClient(cookieStore);
+    const supabase = await createClient();
 
     const { data, error } = await supabase
         .from("negocio_anexos")
@@ -662,8 +638,7 @@ export async function listarAnexos({ negocioId }: { negocioId: string }) {
 }
 
 export async function uploadAnexo(formData: FormData) {
-    const cookieStore = await cookies();
-    const supabase = createClient(cookieStore);
+    const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
@@ -711,8 +686,7 @@ export async function uploadAnexo(formData: FormData) {
 }
 
 export async function deletarAnexo({ anexoId }: { anexoId: string }) {
-    const cookieStore = await cookies();
-    const supabase = createClient(cookieStore);
+    const supabase = await createClient();
 
     const { data: anexo, error: erroBusca } = await supabase
         .from("negocio_anexos")

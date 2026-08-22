@@ -9,7 +9,6 @@ export default async function OnboardingPage({
     params: Promise<{ corretoraId: string }>;
 }) {
     const { corretoraId } = await params;
-    const cookieStore = await cookies();
     const supabase = await createClient();
 
     const { data: { user } } = await supabase.auth.getUser();

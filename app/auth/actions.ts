@@ -12,7 +12,6 @@ export async function createNewUser({
     email: string;
     password: string;
 }) {
-    const cookieStore = await cookies();
     const supabase = await createClient();
 
     const { error } = await supabase.auth.signUp({
@@ -38,7 +37,6 @@ export async function signIn({
     email: string;
     password: string;
 }) {
-    const cookieStore = await cookies();
     const supabase = await createClient();
 
     const { error } = await supabase.auth.signInWithPassword({
