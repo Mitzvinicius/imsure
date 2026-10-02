@@ -1,7 +1,7 @@
 'use server'
 
-import { cookies } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
+import { indiceEtapaRenovacao } from "@/app/lib/seguros/renovacao";
 
 function mensagemErroContato(error: { code?: string; message: string }) {
     if (error.code === "23505") {
@@ -134,9 +134,15 @@ export async function salvarFluxoVendas({
         }
     }
 
+    const indiceRenovacao = indiceEtapaRenovacao(etapas);
     const { error: erroEtapas } = await supabase
         .from("etapas")
-        .insert(etapas.map((nome, index) => ({ fluxo_id: fluxoId, nome, ordem: index })));
+        .insert(etapas.map((nome, index) => ({
+            fluxo_id: fluxoId,
+            nome,
+            ordem: index,
+            renovacao: index === indiceRenovacao,
+        })));
 
     if (erroEtapas) {
         return { error: erroEtapas.message };
