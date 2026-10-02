@@ -27,11 +27,8 @@ import {
     selecionarPlano,
     concluirOnboarding,
 } from '@/app/lib/actions';
+import { RAMOS_OPCOES } from '@/app/lib/seguros/ramos';
 
-const RAMOS_OPCOES = [
-    'Automóvel', 'Vida Individual', 'Residencial',
-    'Resp. Civil Profissional', 'Empresarial', 'Saúde',
-];
 
 const ETAPAS_PADRAO = [
     'Prospecção / Renovações', 'Contato feito', 'Em negociação', 'Arquivado',
