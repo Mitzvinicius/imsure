@@ -1,5 +1,6 @@
 'use client';
 import { useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
@@ -15,6 +16,7 @@ import Paper from "@mui/material/Paper";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import SaveIcon from "@mui/icons-material/Save";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutlined";
+import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import { atualizarNegocio, atualizarContato, deletarNegocio } from "@/app/lib/actions";
 import { Etapa, Negocio } from "./types";
 import { TIPOS, SEGURADORAS, ORIGENS, GRUPOS_PRODUCAO, formatBRL } from "./constants";
@@ -46,6 +48,8 @@ export default function DealDetail({
     onSaved: () => void;
     onDeleted: () => void;
 }) {
+    const router = useRouter();
+    const { corretoraId } = useParams<{ corretoraId: string }>();
     const [nome, setNome] = useState(negocio.contato.nome);
     const [email, setEmail] = useState(negocio.contato.email ?? "");
     const [emailTocado, setEmailTocado] = useState(false);
@@ -143,6 +147,32 @@ export default function DealDetail({
                         <Typography noWrap sx={{ fontWeight: 800, fontSize: 15.5 }}>{nome || "Sem nome"}</Typography>
                         <Chip size="small" label={etapaNome} sx={{ bgcolor: `${cor}26`, color: cor, fontWeight: 700, height: 20, fontSize: 11 }} />
                     </Box>
+                </Stack>
+                <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+                    {negocio.apolice_renovada_id && (
+                        <Button size="small" onClick={() => router.push(`/corretoras/${corretoraId}/apolices/${negocio.apolice_renovada_id}`)}>
+                            Apólice a renovar
+                        </Button>
+                    )}
+                    {negocio.apolice_emitida_id ? (
+                        <Button
+                            variant="outlined"
+                            size="small"
+                            startIcon={<DescriptionOutlinedIcon />}
+                            onClick={() => router.push(`/corretoras/${corretoraId}/apolices/${negocio.apolice_emitida_id}`)}
+                        >
+                            Ver apólice
+                        </Button>
+                    ) : (
+                        <Button
+                            variant="contained"
+                            size="small"
+                            startIcon={<DescriptionOutlinedIcon />}
+                            onClick={() => router.push(`/corretoras/${corretoraId}/apolices/nova?negocioId=${negocio.id}`)}
+                        >
+                            Emitir apólice
+                        </Button>
+                    )}
                 </Stack>
             </Stack>
 

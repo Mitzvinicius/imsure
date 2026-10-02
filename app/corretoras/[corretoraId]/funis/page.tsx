@@ -43,10 +43,14 @@ export default async function Page({
         if (etapaIds.length) {
             const { data: negociosData } = await supabase
                 .from("negocios")
-                .select("id, etapa_id, tipo, ramo, seguradora, origem, grupo_producao, valor, indicacao, criado_em, fechado_em, contato:contatos(id, nome, telefone, email, cpf_cnpj, tipo_pessoa, profissoes), vendedor:usuarios(id, nome)")
+                .select("id, etapa_id, tipo, ramo, seguradora, origem, grupo_producao, valor, indicacao, criado_em, fechado_em, apolice_renovada_id, contato:contatos(id, nome, telefone, email, cpf_cnpj, tipo_pessoa, profissoes), vendedor:usuarios(id, nome), apolice_emitida:apolices!apolices_negocio_origem_id_fkey(id)")
                 .in("etapa_id", etapaIds)
                 .order("criado_em", { ascending: false });
-            negocios = (negociosData ?? []) as unknown as Negocio[];
+            type Bruto = Omit<Negocio, "apolice_emitida_id"> & { apolice_emitida: { id: string } | { id: string }[] | null };
+            negocios = ((negociosData ?? []) as unknown as Bruto[]).map(({ apolice_emitida, ...n }) => ({
+                ...n,
+                apolice_emitida_id: Array.isArray(apolice_emitida) ? (apolice_emitida[0]?.id ?? null) : (apolice_emitida?.id ?? null),
+            }));
         }
     }
 
