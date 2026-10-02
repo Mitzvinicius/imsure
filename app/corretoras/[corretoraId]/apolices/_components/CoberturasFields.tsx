@@ -1,5 +1,5 @@
 'use client';
-import CampoValor from "./CampoValor";
+import { CampoMoeda } from "@/app/ui/design/CamposMascarados";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
@@ -15,8 +15,8 @@ export default function CoberturasFields({ coberturas, onChange }: { coberturas:
             {coberturas.map((c, i) => (
                 <Stack key={i} direction={{ xs: "column", sm: "row" }} spacing={1.5} sx={{ alignItems: "center" }}>
                     <TextField size="small" label="Cobertura" required value={c.nome} onChange={(e) => set(i, { nome: e.target.value })} sx={{ flex: 2 }} />
-                    <CampoValor size="small" label="Importância segurada (R$)" valor={c.importancia_segurada} onValor={(v) => set(i, { importancia_segurada: v })} sx={{ flex: 1 }} />
-                    <CampoValor size="small" label="Franquia (R$)" valor={c.franquia} onValor={(v) => set(i, { franquia: v })} sx={{ flex: 1 }} />
+                    <CampoMoeda size="small" label="Importância segurada" valor={c.importancia_segurada} onValor={(v) => set(i, { importancia_segurada: v })} sx={{ flex: 1 }} />
+                    <CampoMoeda size="small" label="Franquia" valor={c.franquia} onValor={(v) => set(i, { franquia: v })} sx={{ flex: 1 }} />
                     <IconButton size="small" aria-label="Remover cobertura" onClick={() => onChange(coberturas.filter((_, j) => j !== i))}><DeleteOutlineIcon fontSize="small" /></IconButton>
                 </Stack>
             ))}

@@ -1,5 +1,5 @@
 'use client';
-import CampoValor from "./CampoValor";
+import { CampoMoeda } from "@/app/ui/design/CamposMascarados";
 import { useState } from "react";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
@@ -58,8 +58,8 @@ export default function ParcelasFields({
                 <Stack key={i} direction={{ xs: "column", md: "row" }} spacing={1.5} sx={{ alignItems: "center" }}>
                     <TextField size="small" label="Nº" value={p.numero} sx={{ width: 70 }} slotProps={{ htmlInput: { readOnly: true } }} />
                     <TextField size="small" label="Vencimento" type="date" value={p.vencimento} onChange={(e) => set(i, { vencimento: e.target.value })} slotProps={{ inputLabel: { shrink: true } }} />
-                    <CampoValor size="small" label="Valor (R$)" valor={p.valor} onValor={(v) => set(i, { valor: v ?? 0 })} sx={{ width: 130 }} />
-                    <CampoValor size="small" label="Comissão esperada (R$)" valor={p.comissao_esperada} onValor={(v) => set(i, { comissao_esperada: v })} sx={{ width: 180 }} />
+                    <CampoMoeda size="small" label="Valor" valor={p.valor} onValor={(v) => set(i, { valor: v ?? 0 })} sx={{ width: 130 }} />
+                    <CampoMoeda size="small" label="Comissão esperada" valor={p.comissao_esperada} onValor={(v) => set(i, { comissao_esperada: v })} sx={{ width: 180 }} />
                     {mostrarBoleto && (
                         <>
                             <TextField size="small" label="Linha digitável" value={p.linha_digitavel ?? ""} onChange={(e) => set(i, { linha_digitavel: e.target.value || null })} sx={{ flex: 1 }} />

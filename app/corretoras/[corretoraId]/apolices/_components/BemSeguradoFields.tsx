@@ -1,5 +1,5 @@
 'use client';
-import CampoValor from "./CampoValor";
+import { CampoMoeda } from "@/app/ui/design/CamposMascarados";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import MenuItem from "@mui/material/MenuItem";
@@ -66,7 +66,7 @@ export default function BemSeguradoFields({ bem, onChange }: { bem: BemSeguradoF
     return (
         <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
             <TextField label="Atividade coberta" required value={v.atividade} onChange={(e) => set({ atividade: e.target.value })} sx={{ flex: 2 }} />
-            <CampoValor label="Limite (R$)" valor={v.limite} onValor={(limite) => set({ limite })} sx={{ flex: 1 }} />
+            <CampoMoeda label="Limite" valor={v.limite} onValor={(limite) => set({ limite })} sx={{ flex: 1 }} />
         </Stack>
     );
 }

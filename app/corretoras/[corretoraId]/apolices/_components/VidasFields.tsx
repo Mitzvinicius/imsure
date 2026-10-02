@@ -1,4 +1,6 @@
 'use client';
+import { CampoPercentual } from "@/app/ui/design/CamposMascarados";
+import { formatCpf } from "../../funis/masks";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
@@ -25,7 +27,7 @@ export default function VidasFields({ itens, onChange }: { itens: VidaSeguradaFo
                         <Stack spacing={1.5}>
                             <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} sx={{ alignItems: "center" }}>
                                 <TextField label="Nome do segurado" required value={vida.nome} onChange={(e) => atualizar(i, { nome: e.target.value })} sx={{ flex: 2 }} />
-                                <TextField label="CPF" value={vida.cpf} onChange={(e) => atualizar(i, { cpf: e.target.value.replace(/\D/g, "").slice(0, 11) })} sx={{ flex: 1 }} />
+                                <TextField label="CPF" value={formatCpf(vida.cpf)} onChange={(e) => atualizar(i, { cpf: e.target.value.replace(/\D/g, "").slice(0, 11) })} slotProps={{ htmlInput: { inputMode: "numeric" } }} sx={{ flex: 1 }} />
                                 <TextField label="Nascimento" type="date" value={vida.data_nascimento ?? ""} onChange={(e) => atualizar(i, { data_nascimento: e.target.value || null })} slotProps={{ inputLabel: { shrink: true } }} sx={{ flex: 1 }} />
                                 <IconButton aria-label="Remover vida" onClick={() => onChange(itens.filter((_, j) => j !== i))}><DeleteOutlineIcon /></IconButton>
                             </Stack>
@@ -34,7 +36,7 @@ export default function VidasFields({ itens, onChange }: { itens: VidaSeguradaFo
                                 <Stack key={k} direction={{ xs: "column", sm: "row" }} spacing={1.5} sx={{ alignItems: "center" }}>
                                     <TextField size="small" label="Nome" value={b.nome} onChange={(e) => atualizar(i, { beneficiarios: vida.beneficiarios.map((x, y) => (y === k ? { ...x, nome: e.target.value } : x)) })} sx={{ flex: 2 }} />
                                     <TextField size="small" label="Parentesco" value={b.parentesco} onChange={(e) => atualizar(i, { beneficiarios: vida.beneficiarios.map((x, y) => (y === k ? { ...x, parentesco: e.target.value } : x)) })} sx={{ flex: 1 }} />
-                                    <TextField size="small" label="%" type="number" value={b.percentual} onChange={(e) => atualizar(i, { beneficiarios: vida.beneficiarios.map((x, y) => (y === k ? { ...x, percentual: Number(e.target.value) } : x)) })} sx={{ width: 100 }} />
+                                    <CampoPercentual size="small" label="Percentual" valor={b.percentual || null} onValor={(v) => atualizar(i, { beneficiarios: vida.beneficiarios.map((x, y) => (y === k ? { ...x, percentual: v ?? 0 } : x)) })} sx={{ width: 140 }} />
                                     <IconButton size="small" aria-label="Remover beneficiário" onClick={() => atualizar(i, { beneficiarios: vida.beneficiarios.filter((_, y) => y !== k) })}><DeleteOutlineIcon fontSize="small" /></IconButton>
                                 </Stack>
                             ))}

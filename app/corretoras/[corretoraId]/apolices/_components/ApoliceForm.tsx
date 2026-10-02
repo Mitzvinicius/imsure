@@ -1,5 +1,5 @@
 'use client';
-import CampoValor from "./CampoValor";
+import { CampoMoeda, CampoPercentual } from "@/app/ui/design/CamposMascarados";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Box from "@mui/material/Box";
@@ -121,8 +121,8 @@ export default function ApoliceForm({
                         <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
                             <TextField label="Início da vigência" type="date" required value={form.inicioVigencia} onChange={(e) => set({ inicioVigencia: e.target.value })} slotProps={{ inputLabel: { shrink: true } }} sx={{ flex: 1 }} />
                             <TextField label="Fim da vigência" type="date" required value={form.fimVigencia} onChange={(e) => set({ fimVigencia: e.target.value })} slotProps={{ inputLabel: { shrink: true } }} sx={{ flex: 1 }} />
-                            <CampoValor label="Prêmio total (R$)" valor={form.premio} onValor={(premio) => set({ premio })} sx={{ flex: 1 }} />
-                            <CampoValor label="Comissão (%)" valor={form.percentualComissao} onValor={(percentualComissao) => set({ percentualComissao })} sx={{ flex: 1 }} />
+                            <CampoMoeda label="Prêmio total" valor={form.premio} onValor={(premio) => set({ premio })} sx={{ flex: 1 }} />
+                            <CampoPercentual label="Comissão" valor={form.percentualComissao} onValor={(percentualComissao) => set({ percentualComissao })} sx={{ flex: 1 }} />
                             <TextField select label="Forma de pagamento" value={form.formaPagamento} onChange={(e) => set({ formaPagamento: e.target.value as FormaPagamento })} sx={{ flex: 1 }}>
                                 {(Object.keys(LABEL_FORMA_PAGAMENTO) as FormaPagamento[]).map((f) => <MenuItem key={f} value={f}>{LABEL_FORMA_PAGAMENTO[f]}</MenuItem>)}
                             </TextField>

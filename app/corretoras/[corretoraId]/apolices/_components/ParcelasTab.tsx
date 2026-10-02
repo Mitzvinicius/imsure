@@ -1,5 +1,5 @@
 'use client';
-import CampoValor from "./CampoValor";
+import { CampoMoeda } from "@/app/ui/design/CamposMascarados";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Stack from "@mui/material/Stack";
@@ -155,8 +155,8 @@ export default function ParcelasTab({
                     <DialogContent>
                         <Stack spacing={1.5} sx={{ mt: 1 }}>
                             <TextField label="Vencimento" type="date" value={editando.vencimento} onChange={(e) => setEditando({ ...editando, vencimento: e.target.value })} slotProps={{ inputLabel: { shrink: true } }} />
-                            <CampoValor label="Valor (R$)" valor={editando.valor} onValor={(v) => setEditando({ ...editando, valor: v ?? 0 })} />
-                            <CampoValor label="Comissão esperada (R$)" valor={editando.comissao_esperada} onValor={(v) => setEditando({ ...editando, comissao_esperada: v })} />
+                            <CampoMoeda label="Valor" valor={editando.valor} onValor={(v) => setEditando({ ...editando, valor: v ?? 0 })} />
+                            <CampoMoeda label="Comissão esperada" valor={editando.comissao_esperada} onValor={(v) => setEditando({ ...editando, comissao_esperada: v })} />
                             {mostrarBoleto && (
                                 <>
                                     <TextField label="Linha digitável" value={editando.linha_digitavel ?? ""} onChange={(e) => setEditando({ ...editando, linha_digitavel: e.target.value || null })} />

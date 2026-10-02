@@ -1,4 +1,5 @@
 'use client';
+import { CampoMoeda } from "@/app/ui/design/CamposMascarados";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Stack from "@mui/material/Stack";
@@ -14,7 +15,7 @@ import MenuItem from "@mui/material/MenuItem";
 import Alert from "@mui/material/Alert";
 import AddIcon from "@mui/icons-material/Add";
 import { criarEndosso } from "@/app/lib/actions-seguros";
-import { formatData, parseValorBR } from "@/app/lib/seguros/datas";
+import { formatData } from "@/app/lib/seguros/datas";
 import { LABEL_TIPO_ENDOSSO, type Cobertura, type CoberturaForm, type Endosso, type ParcelaForm, type TipoEndosso } from "@/app/lib/seguros/types";
 import { formatBRL } from "../../funis/constants";
 import CoberturasFields from "./CoberturasFields";
@@ -39,18 +40,16 @@ export default function EndossosTab({
     const [tipo, setTipo] = useState<TipoEndosso>("alteracao_bem");
     const [dataEmissao, setDataEmissao] = useState("");
     const [descricao, setDescricao] = useState("");
-    const [valor, setValor] = useState("");
+    const [valor, setValor] = useState<number | null>(null);
     const [coberturas, setCoberturas] = useState<CoberturaForm[]>([]);
     const [parcelas, setParcelas] = useState<ParcelaForm[]>([]);
     const [erro, setErro] = useState<string | null>(null);
     const [salvando, setSalvando] = useState(false);
 
     function limpar() {
-        setNumero(""); setTipo("alteracao_bem"); setDataEmissao(""); setDescricao(""); setValor(""); setCoberturas([]); setParcelas([]); setErro(null);
+        setNumero(""); setTipo("alteracao_bem"); setDataEmissao(""); setDescricao(""); setValor(null); setCoberturas([]); setParcelas([]); setErro(null);
     }
 
-    const valorAbs = parseValorBR(valor);
-    const valorFinal = valorAbs != null && valor.trim().startsWith("-") ? -valorAbs : valorAbs;
 
     async function salvar() {
         setSalvando(true);
@@ -58,7 +57,7 @@ export default function EndossosTab({
             apoliceId, numero, tipo,
             dataEmissao: dataEmissao || null,
             descricao: descricao || null,
-            valor: valorFinal,
+            valor,
             coberturas, parcelas,
         });
         setSalvando(false);
@@ -97,13 +96,13 @@ export default function EndossosTab({
                                 {(Object.keys(LABEL_TIPO_ENDOSSO) as TipoEndosso[]).map((t) => <MenuItem key={t} value={t}>{LABEL_TIPO_ENDOSSO[t]}</MenuItem>)}
                             </TextField>
                             <TextField label="Emissão" type="date" value={dataEmissao} onChange={(e) => setDataEmissao(e.target.value)} slotProps={{ inputLabel: { shrink: true } }} sx={{ flex: 1 }} />
-                            <TextField label="Valor (R$)" value={valor} onChange={(e) => setValor(e.target.value)} helperText="Negativo se for restituição" sx={{ flex: 1 }} />
+                            <CampoMoeda label="Valor" valor={valor} onValor={setValor} permitirNegativo helperText="Digite - para restituição" sx={{ flex: 1 }} />
                         </Stack>
                         <TextField label="Descrição" multiline minRows={2} value={descricao} onChange={(e) => setDescricao(e.target.value)} />
                         <Typography variant="subtitle2">Coberturas do endosso</Typography>
                         <CoberturasFields coberturas={coberturas} onChange={setCoberturas} />
                         <Typography variant="subtitle2">Parcelas do endosso</Typography>
-                        <ParcelasFields parcelas={parcelas} onChange={setParcelas} premio={valorAbs} percentualComissao={percentualComissao} mostrarBoleto={mostrarBoleto} />
+                        <ParcelasFields parcelas={parcelas} onChange={setParcelas} premio={valor != null ? Math.abs(valor) : null} percentualComissao={percentualComissao} mostrarBoleto={mostrarBoleto} />
                         {erro && <Alert severity="error">{erro}</Alert>}
                     </Stack>
                 </DialogContent>

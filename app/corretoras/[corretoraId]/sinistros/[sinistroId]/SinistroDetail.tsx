@@ -1,4 +1,5 @@
 'use client';
+import { CampoMoeda } from "@/app/ui/design/CamposMascarados";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import NextLink from "next/link";
@@ -19,7 +20,7 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { atualizarSinistro, registrarAndamento } from "@/app/lib/actions-seguros";
 import { LABEL_STATUS_SINISTRO, statusDoRamo, type StatusSinistro } from "@/app/lib/seguros/sinistros";
 import { tipoBemDoRamo } from "@/app/lib/seguros/ramos";
-import { formatData, parseValorBR } from "@/app/lib/seguros/datas";
+import { formatData } from "@/app/lib/seguros/datas";
 import type { Andamento } from "@/app/lib/seguros/types";
 import AnexosApoliceTab from "../../apolices/_components/AnexosApoliceTab";
 
@@ -28,8 +29,6 @@ type Sinistro = {
     numero_seguradora: string | null; status: StatusSinistro; valor_indenizacao: number | null;
 };
 type Apolice = { id: string; numero: string; ramo: string; contato: { nome: string } | null; seguradora: { nome: string; telefone_sinistro: string | null } | null };
-
-const num = (n: number | null) => (n != null ? String(n).replace(".", ",") : "");
 
 export default function SinistroDetail({ corretoraId, sinistro, apolice, andamentos }: { corretoraId: string; sinistro: Sinistro; apolice: Apolice; andamentos: Andamento[] }) {
     const router = useRouter();
@@ -41,7 +40,7 @@ export default function SinistroDetail({ corretoraId, sinistro, apolice, andamen
     const [statusNovo, setStatusNovo] = useState<string>("");
     const [processo, setProcesso] = useState("");
     const [numeroSeg, setNumeroSeg] = useState(sinistro.numero_seguradora ?? "");
-    const [valorInd, setValorInd] = useState(num(sinistro.valor_indenizacao));
+    const [valorInd, setValorInd] = useState<number | null>(sinistro.valor_indenizacao);
     const [descricao, setDescricao] = useState(sinistro.descricao ?? "");
     const [erro, setErro] = useState<string | null>(null);
     const [versaoAnexos, setVersaoAnexos] = useState(0);
@@ -58,7 +57,7 @@ export default function SinistroDetail({ corretoraId, sinistro, apolice, andamen
 
     async function salvarDados() {
         setErro(null);
-        const r = await atualizarSinistro({ sinistroId: sinistro.id, descricao: descricao || null, numeroSeguradora: numeroSeg || null, valorIndenizacao: parseValorBR(valorInd) });
+        const r = await atualizarSinistro({ sinistroId: sinistro.id, descricao: descricao || null, numeroSeguradora: numeroSeg || null, valorIndenizacao: valorInd });
         if (r.error) setErro(r.error); else router.refresh();
     }
 
@@ -113,7 +112,7 @@ export default function SinistroDetail({ corretoraId, sinistro, apolice, andamen
                         <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5 }}>Dados do sinistro</Typography>
                         <Stack spacing={1.5}>
                             <TextField label="Nº na seguradora" value={numeroSeg} onChange={(e) => setNumeroSeg(e.target.value)} />
-                            <TextField label="Valor da indenização (R$)" value={valorInd} onChange={(e) => setValorInd(e.target.value)} />
+                            <CampoMoeda label="Valor da indenização" valor={valorInd} onValor={setValorInd} />
                             <TextField label="Descrição" multiline minRows={3} value={descricao} onChange={(e) => setDescricao(e.target.value)} />
                             <Button variant="outlined" sx={{ alignSelf: "flex-end" }} onClick={salvarDados}>Salvar dados</Button>
                         </Stack>

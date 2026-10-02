@@ -1,4 +1,5 @@
 'use client';
+import { CampoMoeda } from "@/app/ui/design/CamposMascarados";
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Box from "@mui/material/Box";
@@ -19,7 +20,7 @@ import DeleteOutlineIcon from "@mui/icons-material/DeleteOutlined";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import { atualizarNegocio, atualizarContato, deletarNegocio } from "@/app/lib/actions";
 import { Etapa, Negocio } from "./types";
-import { TIPOS, SEGURADORAS, ORIGENS, GRUPOS_PRODUCAO, formatBRL } from "./constants";
+import { TIPOS, SEGURADORAS, ORIGENS, GRUPOS_PRODUCAO } from "./constants";
 import { initials, avatarColor } from "@/app/ui/design/avatar";
 import { corEtapa } from "./KanbanView";
 import ProfissaoEditor from "./ProfissaoEditor";
@@ -64,7 +65,7 @@ export default function DealDetail({
     const [seguradora, setSeguradora] = useState(negocio.seguradora ?? "");
     const [origem, setOrigem] = useState(negocio.origem ?? "");
     const [grupoProducao, setGrupoProducao] = useState(negocio.grupo_producao ?? "");
-    const [valor, setValor] = useState(negocio.valor != null ? String(negocio.valor).replace(".", ",") : "");
+    const [valor, setValor] = useState<number | null>(negocio.valor);
     const [fechadoEm, setFechadoEm] = useState(dataParaInput(negocio.fechado_em));
     const [indicacao, setIndicacao] = useState(negocio.indicacao);
 
@@ -75,11 +76,6 @@ export default function DealDetail({
     const cor = corEtapa(etapaIndex < 0 ? 0 : etapaIndex);
     const etapaNome = etapas.find((e) => e.id === etapaId)?.nome ?? "—";
 
-    function parseValor(s: string) {
-        if (!s.trim()) return null;
-        const n = parseFloat(s.replace(/[^\d,]/g, "").replace(",", "."));
-        return isNaN(n) ? null : n;
-    }
 
     function onTelefoneChange(v: string) {
         setTelefone(formatTelefone(v));
@@ -118,7 +114,7 @@ export default function DealDetail({
                 seguradora: seguradora || null,
                 origem: origem || null,
                 grupoProducao: grupoProducao || null,
-                valor: parseValor(valor),
+                valor,
                 indicacao,
                 fechadoEm: fechadoEm || null,
             }),
@@ -240,7 +236,7 @@ export default function DealDetail({
                                 <MenuItem value="">—</MenuItem>
                                 {SEGURADORAS.map((s) => <MenuItem key={s} value={s}>{s}</MenuItem>)}
                             </TextField>
-                            <TextField label="Prêmio bruto" value={valor} onChange={(e) => setValor(e.target.value)} placeholder={formatBRL(0)} />
+                            <CampoMoeda label="Prêmio bruto" valor={valor} onValor={setValor} />
                             <TextField label="Data de fechamento" type="date" value={fechadoEm} onChange={(e) => setFechadoEm(e.target.value)} slotProps={{ inputLabel: { shrink: true } }} />
                             <TextField label="Vendedor responsável" value={negocio.vendedor.nome} disabled />
                             <TextField select label="Origem do cliente" value={origem} onChange={(e) => setOrigem(e.target.value)}>
