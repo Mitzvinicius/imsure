@@ -135,6 +135,11 @@ Spec completo: [`superpowers/specs/2026-10-02-base-seguros-design.md`](superpowe
 - **Renovação automática** cria negócio X dias antes do fim da vigência (X por corretora), na etapa marcada como de renovação (`etapas.renovacao`, não pelo nome — renomear não quebra). Índice único em `negocios.apolice_renovada_id` impede duplicar.
 - **Status da apólice é calculado em TS**, não guardado: só o cancelamento é manual.
 
+## Status do negócio e máscaras (pedidos do Mitz após testar a etapa 1)
+
+- **Ganho é automático, perdido é manual**: emitir apólice marca o negócio como Ganho e o move para a etapa marcada como "de emissão" (`etapas.emissao`, mesmo esquema da renovação — por marcação, não por nome). Perdido exige motivo de uma lista fixa (`MOTIVOS_PERDA`) + observação opcional; "Arquivado" continua sendo só uma etapa. O funil padrão do onboarding ganhou "Seguro emitido".
+- **Máscara de dinheiro "da direita para a esquerda"** (como app de banco): digitar 123456 vira R$ 1.234,56. Evita de vez o bug de vírgula/centavos. Percentual igual, limitado a 100%.
+
 ## Pendências técnicas conhecidas
 
 1. **`contas` sem policy de `UPDATE`** — `selecionarPlano` está quebrado (RLS bloqueia a troca de plano, silenciosamente, sem erro visível). Precisa de uma policy tipo:

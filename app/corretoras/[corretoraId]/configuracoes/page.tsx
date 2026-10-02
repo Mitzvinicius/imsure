@@ -10,14 +10,14 @@ export default async function Page({ params }: { params: Promise<{ corretoraId: 
     const fluxo = (fluxos ?? []).find((f) => f.ativo) ?? fluxos?.[0] ?? null;
 
     const { data: etapas } = fluxo
-        ? await supabase.from("etapas").select("id, nome, ordem, renovacao").eq("fluxo_id", fluxo.id).order("ordem")
-        : { data: [] as { id: string; nome: string; ordem: number; renovacao: boolean }[] };
+        ? await supabase.from("etapas").select("id, nome, ordem, renovacao, emissao").eq("fluxo_id", fluxo.id).order("ordem")
+        : { data: [] as { id: string; nome: string; ordem: number; renovacao: boolean; emissao: boolean }[] };
 
     return (
         <ConfiguracoesPage
             corretoraId={corretoraId}
             diasIniciais={(corretora?.dias_antecedencia_renovacao as number | undefined) ?? 60}
-            etapas={(etapas ?? []) as { id: string; nome: string; renovacao: boolean }[]}
+            etapas={(etapas ?? []) as { id: string; nome: string; renovacao: boolean; emissao: boolean }[]}
         />
     );
 }

@@ -43,7 +43,7 @@ export default async function Page({
         if (etapaIds.length) {
             const { data: negociosData } = await supabase
                 .from("negocios")
-                .select("id, etapa_id, tipo, ramo, seguradora, origem, grupo_producao, valor, indicacao, criado_em, fechado_em, apolice_renovada_id, contato:contatos(id, nome, telefone, email, cpf_cnpj, tipo_pessoa, profissoes), vendedor:usuarios(id, nome), apolice_emitida:apolices!apolices_negocio_origem_id_fkey(id)")
+                .select("id, etapa_id, tipo, ramo, seguradora, origem, grupo_producao, valor, indicacao, criado_em, fechado_em, apolice_renovada_id, status, motivo_perda, observacao_perda, contato:contatos(id, nome, telefone, email, cpf_cnpj, tipo_pessoa, profissoes), vendedor:usuarios(id, nome), apolice_emitida:apolices!apolices_negocio_origem_id_fkey(id)")
                 .in("etapa_id", etapaIds)
                 .order("criado_em", { ascending: false });
             type Bruto = Omit<Negocio, "apolice_emitida_id"> & { apolice_emitida: { id: string } | { id: string }[] | null };

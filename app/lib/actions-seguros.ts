@@ -6,6 +6,7 @@ import { mensagemErroSeguros } from "@/app/lib/seguros/erros";
 import { hojeSaoPaulo } from "@/app/lib/seguros/datas";
 import { statusValidoParaRamo } from "@/app/lib/seguros/sinistros";
 import { nomeSeguroParaStorage } from "@/app/lib/seguros/arquivos";
+import { LABEL_STATUS_NEGOCIO, type StatusNegocio } from "@/app/lib/seguros/etapas";
 import type { AnexoApolice, ApoliceForm, CoberturaForm, ParcelaForm, TipoEndosso } from "@/app/lib/seguros/types";
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;
@@ -152,6 +153,41 @@ async function validarReferenciasApolice(supabase: Supabase, corretoraId: string
     return null;
 }
 
+// Emitir apólice = negócio ganho: status, data de fechamento e etapa de emissão do funil (se houver).
+async function marcarNegocioGanho(supabase: Supabase, negocioId: string) {
+    const { data: { user } } = await supabase.auth.getUser();
+    const { data: n } = await supabase
+        .from("negocios")
+        .select("status, etapa_id, fechado_em, etapa:etapas!inner(nome, fluxo_id)")
+        .eq("id", negocioId)
+        .maybeSingle();
+    if (!n) return;
+    const etapaAtual = n.etapa as unknown as { nome: string; fluxo_id: string };
+    const { data: emissao } = await supabase
+        .from("etapas")
+        .select("id, nome")
+        .eq("fluxo_id", etapaAtual.fluxo_id)
+        .eq("emissao", true)
+        .maybeSingle();
+
+    const mudancas: Record<string, unknown> = { status: "ganho", motivo_perda: null, observacao_perda: null };
+    if (!n.fechado_em) mudancas.fechado_em = hojeSaoPaulo();
+    const mover = emissao && emissao.id !== n.etapa_id;
+    if (mover) mudancas.etapa_id = emissao.id;
+    const { error } = await supabase.from("negocios").update(mudancas).eq("id", negocioId);
+    if (error || !user) return;
+
+    const base = { negocio_id: negocioId, usuario_id: user.id, usuario_nome: nomeUsuario(user) };
+    const historico = [];
+    if (n.status !== "ganho") {
+        historico.push({ ...base, campo: "Status", valor_anterior: LABEL_STATUS_NEGOCIO[n.status as StatusNegocio], valor_novo: LABEL_STATUS_NEGOCIO.ganho });
+    }
+    if (mover) {
+        historico.push({ ...base, campo: "Etapa", valor_anterior: etapaAtual.nome, valor_novo: emissao.nome as string });
+    }
+    if (historico.length) await supabase.from("negocio_historico").insert(historico);
+}
+
 export async function criarApolice({ corretoraId, dados }: { corretoraId: string; dados: ApoliceForm }) {
     const erroValidacao = validarApoliceForm(dados);
     if (erroValidacao) return { error: erroValidacao, apoliceId: null };
@@ -199,7 +235,7 @@ export async function criarApolice({ corretoraId, dados }: { corretoraId: string
     }
 
     if (dados.negocioOrigemId) {
-        await supabase.from("negocios").update({ fechado_em: hojeSaoPaulo() }).eq("id", dados.negocioOrigemId).is("fechado_em", null);
+        await marcarNegocioGanho(supabase, dados.negocioOrigemId);
     }
     return { error: null, apoliceId };
 }
@@ -542,10 +578,12 @@ export async function atualizarConfiguracoesCorretora({
     corretoraId,
     diasAntecedencia,
     etapaRenovacaoId,
+    etapaEmissaoId,
 }: {
     corretoraId: string;
     diasAntecedencia: number;
     etapaRenovacaoId: string | null;
+    etapaEmissaoId: string | null;
 }) {
     if (!Number.isInteger(diasAntecedencia) || diasAntecedencia < 1 || diasAntecedencia > 365) {
         return { error: "Informe entre 1 e 365 dias" };
@@ -559,6 +597,12 @@ export async function atualizarConfiguracoesCorretora({
     if (fluxoIds.length) {
         const { error: erroLimpar } = await supabase.from("etapas").update({ renovacao: false }).in("fluxo_id", fluxoIds).eq("renovacao", true);
         if (erroLimpar) return { error: mensagemErroSeguros(erroLimpar) };
+        const { error: erroLimparEmissao } = await supabase.from("etapas").update({ emissao: false }).in("fluxo_id", fluxoIds).eq("emissao", true);
+        if (erroLimparEmissao) return { error: mensagemErroSeguros(erroLimparEmissao) };
+    }
+    if (etapaEmissaoId) {
+        const { error: erroEmissao } = await supabase.from("etapas").update({ emissao: true }).eq("id", etapaEmissaoId).in("fluxo_id", fluxoIds);
+        if (erroEmissao) return { error: mensagemErroSeguros(erroEmissao) };
     }
     if (etapaRenovacaoId) {
         const { error: erroMarcar } = await supabase.from("etapas").update({ renovacao: true }).eq("id", etapaRenovacaoId).in("fluxo_id", fluxoIds);

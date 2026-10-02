@@ -61,6 +61,8 @@ export default function ListView({
                                 <TableCell sx={{ color: "text.secondary" }}>{n.tipo}</TableCell>
                                 <TableCell>
                                     <Chip size="small" label={etapaNome.get(n.etapa_id) ?? "—"} sx={{ bgcolor: `${corEtapa(etapaIndex.get(n.etapa_id) ?? 0)}26`, color: corEtapa(etapaIndex.get(n.etapa_id) ?? 0), fontWeight: 700 }} />
+                                    {n.status === "ganho" && <Chip size="small" color="success" label="Ganho" sx={{ ml: 0.5 }} />}
+                                    {n.status === "perdido" && <Chip size="small" color="error" label="Perdido" sx={{ ml: 0.5 }} />}
                                 </TableCell>
                                 <TableCell>{n.ramo}</TableCell>
                                 <TableCell align="right" sx={{ fontWeight: 700 }}>{formatBRL(n.valor)}</TableCell>

@@ -31,7 +31,7 @@ import { RAMOS_OPCOES } from '@/app/lib/seguros/ramos';
 
 
 const ETAPAS_PADRAO = [
-    'Prospecção / Renovações', 'Contato feito', 'Em negociação', 'Arquivado',
+    'Prospecção / Renovações', 'Contato feito', 'Em negociação', 'Seguro emitido', 'Arquivado',
 ];
 
 type Plano = {

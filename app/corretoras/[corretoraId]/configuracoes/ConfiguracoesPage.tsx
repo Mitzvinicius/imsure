@@ -18,18 +18,19 @@ export default function ConfiguracoesPage({
 }: {
     corretoraId: string;
     diasIniciais: number;
-    etapas: { id: string; nome: string; renovacao: boolean }[];
+    etapas: { id: string; nome: string; renovacao: boolean; emissao: boolean }[];
 }) {
     const router = useRouter();
     const [dias, setDias] = useState(String(diasIniciais));
     const [etapaId, setEtapaId] = useState(etapas.find((e) => e.renovacao)?.id ?? "");
+    const [etapaEmissaoId, setEtapaEmissaoId] = useState(etapas.find((e) => e.emissao)?.id ?? "");
     const [erro, setErro] = useState<string | null>(null);
     const [salvo, setSalvo] = useState(false);
 
     async function salvar() {
         setErro(null);
         setSalvo(false);
-        const r = await atualizarConfiguracoesCorretora({ corretoraId, diasAntecedencia: Number(dias), etapaRenovacaoId: etapaId || null });
+        const r = await atualizarConfiguracoesCorretora({ corretoraId, diasAntecedencia: Number(dias), etapaRenovacaoId: etapaId || null, etapaEmissaoId: etapaEmissaoId || null });
         if (r.error) { setErro(r.error); return; }
         setSalvo(true);
         router.refresh();
@@ -51,6 +52,20 @@ export default function ConfiguracoesPage({
                     </TextField>
                     {!etapaId && <Alert severity="warning">Nenhuma etapa marcada como de renovação — os negócios vão entrar na primeira etapa do funil.</Alert>}
                     {!etapas.length && <Alert severity="info">Esta corretora ainda não tem funil configurado; nenhum negócio de renovação será criado.</Alert>}
+                </Stack>
+            </Paper>
+
+            <Paper variant="outlined" sx={{ p: 2.5, mt: 2 }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>Emissão de apólice</Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                    Quando uma apólice é emitida a partir de um negócio, ele fica como Ganho e vai para esta etapa do funil.
+                </Typography>
+                <Stack spacing={2}>
+                    <TextField select label="Etapa de seguro emitido" value={etapaEmissaoId} onChange={(e) => setEtapaEmissaoId(e.target.value)}>
+                        <MenuItem value="">Nenhuma (o negócio fica na etapa atual)</MenuItem>
+                        {etapas.map((e) => <MenuItem key={e.id} value={e.id}>{e.nome}</MenuItem>)}
+                    </TextField>
+                    {!etapaEmissaoId && <Alert severity="warning">Sem etapa de emissão: o negócio é marcado como Ganho mas não muda de etapa.</Alert>}
                     {erro && <Alert severity="error">{erro}</Alert>}
                     {salvo && <Alert severity="success">Configurações salvas.</Alert>}
                     <Button variant="contained" sx={{ alignSelf: "flex-end" }} onClick={salvar}>Salvar</Button>

@@ -18,7 +18,13 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import SaveIcon from "@mui/icons-material/Save";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutlined";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
-import { atualizarNegocio, atualizarContato, deletarNegocio } from "@/app/lib/actions";
+import { atualizarNegocio, atualizarContato, deletarNegocio, marcarNegocioPerdido, reabrirNegocio } from "@/app/lib/actions";
+import { MOTIVOS_PERDA } from "@/app/lib/seguros/etapas";
+import Dialog from "@mui/material/Dialog";
+import DialogTitle from "@mui/material/DialogTitle";
+import DialogContent from "@mui/material/DialogContent";
+import DialogActions from "@mui/material/DialogActions";
+import Alert from "@mui/material/Alert";
 import { Etapa, Negocio } from "./types";
 import { TIPOS, SEGURADORAS, ORIGENS, GRUPOS_PRODUCAO } from "./constants";
 import { initials, avatarColor } from "@/app/ui/design/avatar";
@@ -51,6 +57,25 @@ export default function DealDetail({
 }) {
     const router = useRouter();
     const { corretoraId } = useParams<{ corretoraId: string }>();
+    const [perdaAberta, setPerdaAberta] = useState(false);
+    const [motivoPerda, setMotivoPerda] = useState("");
+    const [observacaoPerda, setObservacaoPerda] = useState("");
+    const [erroStatus, setErroStatus] = useState<string | null>(null);
+
+    async function confirmarPerda() {
+        setErroStatus(null);
+        const r = await marcarNegocioPerdido({ negocioId: negocio.id, motivo: motivoPerda, observacao: observacaoPerda || null });
+        if (r.error) { setErroStatus(r.error); return; }
+        setPerdaAberta(false);
+        onSaved();
+    }
+
+    async function reabrir() {
+        setErroStatus(null);
+        const r = await reabrirNegocio({ negocioId: negocio.id });
+        if (r.error) setErroStatus(r.error); else onSaved();
+    }
+
     const [nome, setNome] = useState(negocio.contato.nome);
     const [email, setEmail] = useState(negocio.contato.email ?? "");
     const [emailTocado, setEmailTocado] = useState(false);
@@ -145,6 +170,14 @@ export default function DealDetail({
                     </Box>
                 </Stack>
                 <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+                    {negocio.status === "ganho" && <Chip color="success" label="Ganho" />}
+                    {negocio.status === "perdido" && (
+                        <Chip color="error" label={negocio.motivo_perda ? `Perdido · ${negocio.motivo_perda}` : "Perdido"} title={negocio.observacao_perda ?? undefined} />
+                    )}
+                    {negocio.status === "perdido" && <Button size="small" onClick={reabrir}>Reabrir</Button>}
+                    {negocio.status === "aberto" && (
+                        <Button size="small" color="error" onClick={() => setPerdaAberta(true)}>Marcar como perdido</Button>
+                    )}
                     {negocio.apolice_renovada_id && (
                         <Button size="small" onClick={() => router.push(`/corretoras/${corretoraId}/apolices/${negocio.apolice_renovada_id}`)}>
                             Apólice a renovar
@@ -274,6 +307,22 @@ export default function DealDetail({
                     </Button>
                 </Stack>
             </Stack>
+            <Dialog open={perdaAberta} onClose={() => setPerdaAberta(false)} fullWidth maxWidth="xs">
+                <DialogTitle>Marcar negócio como perdido</DialogTitle>
+                <DialogContent>
+                    <Stack spacing={2} sx={{ mt: 1 }}>
+                        <TextField select label="Motivo" required value={motivoPerda} onChange={(e) => setMotivoPerda(e.target.value)}>
+                            {MOTIVOS_PERDA.map((m) => <MenuItem key={m} value={m}>{m}</MenuItem>)}
+                        </TextField>
+                        <TextField label="Observação" multiline minRows={2} value={observacaoPerda} onChange={(e) => setObservacaoPerda(e.target.value)} />
+                        {erroStatus && <Alert severity="error">{erroStatus}</Alert>}
+                    </Stack>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setPerdaAberta(false)}>Cancelar</Button>
+                    <Button variant="contained" color="error" disabled={!motivoPerda} onClick={confirmarPerda}>Marcar como perdido</Button>
+                </DialogActions>
+            </Dialog>
         </Box>
     );
 }

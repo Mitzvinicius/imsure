@@ -36,7 +36,7 @@ CRM/ERP para corretoras de seguros, multi-tenant (uma conta pode ter múltiplas 
 `app/dashboard/page.tsx` e `app/ui/opportunities/table.tsx` são stubs/rascunho, provavelmente do colega trabalhando em paralelo na navegação/sidebar — status desconhecido, não mexer sem confirmar com ele.
 
 ## Server Actions
-- `app/lib/actions.ts` — `criarConta`, `atualizarDadosCorretora`, `salvarRamosAtuacao`, `salvarFluxoVendas`, `selecionarPlano`, `concluirOnboarding`, `definirFunilAtivo`, `buscarContatos`, `criarNegocio`, `moverNegocio`, `atualizarNegocio`, `atualizarContato`, `deletarNegocio`
+- `app/lib/actions.ts` — `criarConta`, `atualizarDadosCorretora`, `salvarRamosAtuacao`, `salvarFluxoVendas`, `selecionarPlano`, `concluirOnboarding`, `definirFunilAtivo`, `buscarContatos`, `criarNegocio`, `moverNegocio`, `atualizarNegocio`, `atualizarContato`, `deletarNegocio`, `marcarNegocioPerdido`, `reabrirNegocio`
 - `app/lib/actions-seguros.ts` — `criarApolice`, `atualizarApolice`, `cancelarApolice`, `adicionarParcelas`, `atualizarParcela`, `darBaixaManual`, `criarEndosso`, `listarAnexosApolice`, `uploadAnexoApolice`, `deletarAnexoApolice`, `criarSinistro`, `atualizarSinistro`, `registrarAndamento`, `atualizarConfiguracoesCorretora`
 - Regras puras (testadas com Vitest) em `app/lib/seguros/`: ramos, datas, parcelas, status, sinistros, renovação, validação, mensagens de erro, tipos.
 - `app/auth/actions.ts` — `signIn`, `createNewUser`
@@ -45,7 +45,7 @@ CRM/ERP para corretoras de seguros, multi-tenant (uma conta pode ter múltiplas 
 ## Banco de dados (Supabase)
 Hierarquia: `planos` → `contas` (dono = `owner_usuario_id`) → `corretoras` → `fluxos` → `etapas` → `negocios`. `corretoras` também tem `contatos` (pessoas cadastradas) — `negocios.contato_id` referencia `contatos`, `negocios.vendedor_usuario_id` referencia `usuarios`. `usuarios` espelha `auth.users` (criado via trigger `handle_new_user`).
 
-Seguros: `corretoras` → `apolices` (cliente = `contato_id`, `seguradora_id` → `seguradoras`, lista **global**) → `endossos`, `parcelas` (da apólice ou de um endosso — a apólice **não** é "endosso 0"), `coberturas`, `bens_auto`/`bens_residencial`/`bens_rc`/`vidas_seguradas` → `beneficiarios`, `sinistros` → `sinistro_andamentos`, `apolice_anexos` (bucket privado `apolice-anexos`). Renovação: `negocios.apolice_renovada_id`, `etapas.renovacao`, `corretoras.dias_antecedencia_renovacao`, função `criar_negocios_renovacao()` agendada diariamente via `pg_cron`. Migrações versionadas em `supabase/migrations/` (aplicadas pelo MCP do Supabase) e testes SQL em `supabase/tests/` (rodar com `execute_sql`; desfazem tudo com `rollback`).
+Seguros: `corretoras` → `apolices` (cliente = `contato_id`, `seguradora_id` → `seguradoras`, lista **global**) → `endossos`, `parcelas` (da apólice ou de um endosso — a apólice **não** é "endosso 0"), `coberturas`, `bens_auto`/`bens_residencial`/`bens_rc`/`vidas_seguradas` → `beneficiarios`, `sinistros` → `sinistro_andamentos`, `apolice_anexos` (bucket privado `apolice-anexos`). Negócio tem `status` (aberto/ganho/perdido, com `motivo_perda`/`observacao_perda`): emitir apólice marca ganho e move para a etapa `etapas.emissao` (escolhida em Configurações); perdido é manual com motivo. Renovação: `negocios.apolice_renovada_id`, `etapas.renovacao`, `corretoras.dias_antecedencia_renovacao`, função `criar_negocios_renovacao()` agendada diariamente via `pg_cron`. Migrações versionadas em `supabase/migrations/` (aplicadas pelo MCP do Supabase) e testes SQL em `supabase/tests/` (rodar com `execute_sql`; desfazem tudo com `rollback`).
 
 RLS ativo em tudo. Modelo de autorização: **dono da `conta` controla tudo abaixo na hierarquia** (verificado via subquery `contas.owner_usuario_id = auth.uid()` em cada tabela filha, subindo a cadeia de FKs). `usuario_corretora` (multi-usuário por corretora) ainda não existe — hoje só o dono acessa; `negocios.vendedor_usuario_id` já existe pensando nisso (ver `docs/decisoes.md`). Tabelas de seguros usam as funções helper `usuario_possui_corretora(id)`/`usuario_possui_apolice(id)` (security definer, executáveis só por `authenticated`).
 
@@ -53,6 +53,7 @@ RLS ativo em tudo. Modelo de autorização: **dono da `conta` controla tudo abai
 
 ## Design system
 - Tema MUI em `app/ui/design/theme.ts` (light/dark), aplicado via `app/ui/design/ThemeRegistry.tsx` no layout raiz — mapeia as mesmas cores que estavam em `app/globals.css` (que hoje só guarda os tokens de cor como referência/fonte de verdade pro tema, não estiliza nada diretamente).
+- Campos com máscara: `app/ui/design/CamposMascarados.tsx` (`CampoMoeda` — R$ preenchido da direita para a esquerda — e `CampoPercentual`), funções em `funis/masks.ts`.
 - Helpers compartilhados em `app/ui/design/`: `avatar.tsx` (iniciais/cor por nome), `icons.tsx` (só o logo do Google, que o MUI não tem — o resto dos ícones vem de `@mui/icons-material`).
 - Padrão de página: `page.tsx` (Server Component — busca dados, guarda de autenticação) + `NomeDaPagina.tsx` (Client Component — interatividade).
 
