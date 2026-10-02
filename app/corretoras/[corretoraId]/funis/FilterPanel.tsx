@@ -8,15 +8,8 @@ import MenuItem from "@mui/material/MenuItem";
 import Button from "@mui/material/Button";
 import { TIPOS, SEGURADORAS } from "./constants";
 
-export type Filtros = {
-    cliente: string;
-    tipo: string;
-    ramo: string;
-    seguradora: string;
-    criadoDe: string;
-};
-
-export const FILTROS_VAZIOS: Filtros = { cliente: "", tipo: "", ramo: "", seguradora: "", criadoDe: "" };
+import { contarFiltrosAtivos, type Filtros } from "./filtros";
+import { LABEL_STATUS_NEGOCIO, type StatusNegocio } from "@/app/lib/seguros/etapas";
 
 export default function FilterPanel({
     anchorEl,
@@ -34,7 +27,7 @@ export default function FilterPanel({
     ramosAtuacao: string[];
 }) {
     const set = <K extends keyof Filtros>(k: K, v: Filtros[K]) => onChange({ ...filtros, [k]: v });
-    const appliedCount = Object.values(filtros).filter(Boolean).length;
+    const appliedCount = contarFiltrosAtivos(filtros);
 
     return (
         <Popover
@@ -57,6 +50,10 @@ export default function FilterPanel({
                         onChange={(e) => set("cliente", e.target.value)}
                         sx={{ gridColumn: "1 / -1" }}
                     />
+                    <TextField size="small" select label="Status" value={filtros.status} onChange={(e) => set("status", e.target.value as StatusNegocio | "")} sx={{ gridColumn: "1 / -1" }}>
+                        <MenuItem value="">Todos (em aberto, ganhos e perdidos)</MenuItem>
+                        {(Object.keys(LABEL_STATUS_NEGOCIO) as StatusNegocio[]).map((st) => <MenuItem key={st} value={st}>{LABEL_STATUS_NEGOCIO[st]}</MenuItem>)}
+                    </TextField>
                     <TextField size="small" select label="Tipo de seguro" value={filtros.tipo} onChange={(e) => set("tipo", e.target.value)}>
                         <MenuItem value="">Todos os tipos</MenuItem>
                         {TIPOS.map((t) => <MenuItem key={t} value={t}>{t}</MenuItem>)}

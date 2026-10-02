@@ -26,7 +26,8 @@ import KanbanView from "./KanbanView";
 import ListView from "./ListView";
 import NewDealModal from "./NewDealModal";
 import DealDetail from "./DealDetail";
-import FilterPanel, { Filtros, FILTROS_VAZIOS } from "./FilterPanel";
+import FilterPanel from "./FilterPanel";
+import { contarFiltrosAtivos, FILTROS_PADRAO, negocioPassaNoFiltro, type Filtros } from "./filtros";
 import { definirFunilAtivo, moverNegocio } from "@/app/lib/actions";
 import { Etapa, Fluxo, Negocio } from "./types";
 import { formatBRL } from "./constants";
@@ -53,7 +54,7 @@ export default function FunisPage({
 
     const [view, setView] = useState<"kanban" | "lista">("kanban");
     const [busca, setBusca] = useState("");
-    const [filtros, setFiltros] = useState<Filtros>(FILTROS_VAZIOS);
+    const [filtros, setFiltros] = useState<Filtros>(FILTROS_PADRAO);
     const [filterAnchor, setFilterAnchor] = useState<HTMLElement | null>(null);
     const [fluxoAnchor, setFluxoAnchor] = useState<HTMLElement | null>(null);
     const [modalOpen, setModalOpen] = useState(false);
@@ -76,22 +77,13 @@ export default function FunisPage({
         router.push(pathname);
     }
 
-    const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(new RegExp("[̀-ͯ]", "g"), "");
+    const negociosFiltrados = useMemo(
+        () => negocios.filter((n) => negocioPassaNoFiltro(n, busca, filtros)),
+        [negocios, busca, filtros],
+    );
 
-    const negociosFiltrados = useMemo(() => {
-        return negocios.filter((n) => {
-            if (busca.trim() && !norm(n.contato.nome).includes(norm(busca))) return false;
-            if (filtros.cliente && !norm(n.contato.nome).includes(norm(filtros.cliente))) return false;
-            if (filtros.tipo && n.tipo !== filtros.tipo) return false;
-            if (filtros.ramo && n.ramo !== filtros.ramo) return false;
-            if (filtros.seguradora && n.seguradora !== filtros.seguradora) return false;
-            if (filtros.criadoDe && n.criado_em.slice(0, 10) < filtros.criadoDe) return false;
-            return true;
-        });
-    }, [negocios, busca, filtros]);
-
-    const activeFilterCount = Object.values(filtros).filter(Boolean).length;
-    const totalPipeline = negocios.reduce((s, d) => s + Number(d.valor || 0), 0);
+    const activeFilterCount = contarFiltrosAtivos(filtros);
+    const totalPipeline = negocios.filter((d) => d.status === "aberto").reduce((s, d) => s + Number(d.valor || 0), 0);
 
     async function trocarFluxo(fluxoId: string) {
         setFluxoAnchor(null);
@@ -185,7 +177,7 @@ export default function FunisPage({
                     onClose={() => setFilterAnchor(null)}
                     filtros={filtros}
                     onChange={setFiltros}
-                    onClear={() => setFiltros(FILTROS_VAZIOS)}
+                    onClear={() => setFiltros(FILTROS_PADRAO)}
                     ramosAtuacao={ramosAtuacao}
                 />
             </Stack>
