@@ -4,6 +4,7 @@ import { createClient } from "@/utils/supabase/server";
 import { validarApoliceForm } from "@/app/lib/seguros/validacao";
 import { mensagemErroSeguros } from "@/app/lib/seguros/erros";
 import { hojeSaoPaulo } from "@/app/lib/seguros/datas";
+import { statusValidoParaRamo } from "@/app/lib/seguros/sinistros";
 import type { AnexoApolice, ApoliceForm, CoberturaForm, ParcelaForm, TipoEndosso } from "@/app/lib/seguros/types";
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;
@@ -337,4 +338,160 @@ export async function deletarAnexoApolice({ anexoId }: { anexoId: string }) {
 
     const { error } = await supabase.from("apolice_anexos").delete().eq("id", anexoId);
     return { error: error ? mensagemErroSeguros(error) : null };
+}
+
+export async function criarSinistro({
+    apoliceId,
+    bemAutoId,
+    bemResidencialId,
+    dataOcorrencia,
+    tipo,
+    descricao,
+    numeroSeguradora,
+}: {
+    apoliceId: string;
+    bemAutoId: string | null;
+    bemResidencialId: string | null;
+    dataOcorrencia: string;
+    tipo: string;
+    descricao: string | null;
+    numeroSeguradora: string | null;
+}) {
+    if (!dataOcorrencia) return { error: "Informe a data da ocorrência", sinistroId: null };
+    if (!tipo) return { error: "Informe o tipo do sinistro", sinistroId: null };
+
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: "Usuario não encontrado", sinistroId: null };
+
+    const { data: sinistro, error } = await supabase
+        .from("sinistros")
+        .insert({
+            apolice_id: apoliceId,
+            bem_auto_id: bemAutoId,
+            bem_residencial_id: bemResidencialId,
+            data_ocorrencia: dataOcorrencia,
+            tipo,
+            descricao,
+            numero_seguradora: numeroSeguradora,
+            status: "aberto",
+        })
+        .select("id")
+        .single();
+    if (error || !sinistro) return { error: error ? mensagemErroSeguros(error) : "Não foi possível abrir o sinistro", sinistroId: null };
+
+    const { error: erroAndamento } = await supabase.from("sinistro_andamentos").insert({
+        sinistro_id: sinistro.id,
+        descricao: "Sinistro aberto",
+        status_novo: "aberto",
+        usuario_id: user.id,
+        usuario_nome: nomeUsuario(user),
+    });
+    if (erroAndamento) {
+        await supabase.from("sinistros").delete().eq("id", sinistro.id);
+        return { error: mensagemErroSeguros(erroAndamento), sinistroId: null };
+    }
+    return { error: null, sinistroId: sinistro.id as string };
+}
+
+export async function atualizarSinistro({
+    sinistroId,
+    descricao,
+    numeroSeguradora,
+    valorIndenizacao,
+}: {
+    sinistroId: string;
+    descricao: string | null;
+    numeroSeguradora: string | null;
+    valorIndenizacao: number | null;
+}) {
+    const supabase = await createClient();
+    const { error } = await supabase
+        .from("sinistros")
+        .update({ descricao, numero_seguradora: numeroSeguradora, valor_indenizacao: valorIndenizacao })
+        .eq("id", sinistroId);
+    return { error: error ? mensagemErroSeguros(error) : null };
+}
+
+export async function registrarAndamento({
+    sinistroId,
+    descricao,
+    statusNovo,
+    numeroProcesso,
+}: {
+    sinistroId: string;
+    descricao: string;
+    statusNovo: string | null;
+    numeroProcesso: string | null;
+}) {
+    if (!descricao.trim()) return { error: "Descreva o andamento", andamentoId: null };
+
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: "Usuario não encontrado", andamentoId: null };
+
+    const { data: sinistro } = await supabase
+        .from("sinistros")
+        .select("status, apolice:apolices(ramo)")
+        .eq("id", sinistroId)
+        .maybeSingle();
+    if (!sinistro) return { error: "Sinistro não encontrado", andamentoId: null };
+
+    const ramo = (sinistro.apolice as unknown as { ramo: string }).ramo;
+    const mudouStatus = statusNovo && statusNovo !== sinistro.status;
+    if (mudouStatus && !statusValidoParaRamo(statusNovo, ramo)) {
+        return { error: "Esse status não se aplica a sinistros desse ramo", andamentoId: null };
+    }
+
+    const { data: andamento, error } = await supabase
+        .from("sinistro_andamentos")
+        .insert({
+            sinistro_id: sinistroId,
+            descricao: descricao.trim(),
+            status_novo: mudouStatus ? statusNovo : null,
+            numero_processo: numeroProcesso || null,
+            usuario_id: user.id,
+            usuario_nome: nomeUsuario(user),
+        })
+        .select("id")
+        .single();
+    if (error || !andamento) return { error: error ? mensagemErroSeguros(error) : "Não foi possível registrar o andamento", andamentoId: null };
+
+    if (mudouStatus) {
+        const { error: erroStatus } = await supabase.from("sinistros").update({ status: statusNovo }).eq("id", sinistroId);
+        if (erroStatus) {
+            await supabase.from("sinistro_andamentos").delete().eq("id", andamento.id);
+            return { error: mensagemErroSeguros(erroStatus), andamentoId: null };
+        }
+    }
+    return { error: null, andamentoId: andamento.id as string };
+}
+
+export async function atualizarConfiguracoesCorretora({
+    corretoraId,
+    diasAntecedencia,
+    etapaRenovacaoId,
+}: {
+    corretoraId: string;
+    diasAntecedencia: number;
+    etapaRenovacaoId: string | null;
+}) {
+    if (!Number.isInteger(diasAntecedencia) || diasAntecedencia < 1 || diasAntecedencia > 365) {
+        return { error: "Informe entre 1 e 365 dias" };
+    }
+    const supabase = await createClient();
+    const { error } = await supabase.from("corretoras").update({ dias_antecedencia_renovacao: diasAntecedencia }).eq("id", corretoraId);
+    if (error) return { error: mensagemErroSeguros(error) };
+
+    const { data: fluxos } = await supabase.from("fluxos").select("id").eq("corretora_id", corretoraId);
+    const fluxoIds = (fluxos ?? []).map((f) => f.id as string);
+    if (fluxoIds.length) {
+        const { error: erroLimpar } = await supabase.from("etapas").update({ renovacao: false }).in("fluxo_id", fluxoIds).eq("renovacao", true);
+        if (erroLimpar) return { error: mensagemErroSeguros(erroLimpar) };
+    }
+    if (etapaRenovacaoId) {
+        const { error: erroMarcar } = await supabase.from("etapas").update({ renovacao: true }).eq("id", etapaRenovacaoId).in("fluxo_id", fluxoIds);
+        if (erroMarcar) return { error: mensagemErroSeguros(erroMarcar) };
+    }
+    return { error: null };
 }
