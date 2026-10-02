@@ -16,6 +16,9 @@ import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ViewKanbanOutlinedIcon from '@mui/icons-material/ViewKanbanOutlined';
 import PeopleOutlinedIcon from '@mui/icons-material/PeopleOutlined';
+import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
+import ReportProblemOutlinedIcon from '@mui/icons-material/ReportProblemOutlined';
+import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import LightModeIcon from '@mui/icons-material/LightMode';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LogoutIcon from '@mui/icons-material/Logout';
@@ -26,6 +29,9 @@ import { createClient } from '@/utils/supabase/client';
 const NAV_ITEMS = [
     { href: 'funis', label: 'Funis', icon: ViewKanbanOutlinedIcon },
     { href: 'contatos', label: 'Contatos', icon: PeopleOutlinedIcon },
+    { href: 'apolices', label: 'Apólices', icon: DescriptionOutlinedIcon },
+    { href: 'sinistros', label: 'Sinistros', icon: ReportProblemOutlinedIcon },
+    { href: 'configuracoes', label: 'Configurações', icon: SettingsOutlinedIcon },
 ];
 
 export default function Sidebar({

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatData, hojeSaoPaulo, parseValorBR, somarMeses } from "./datas";
+import { formatData, hojeSaoPaulo, parseValorBR, somarDias, somarMeses } from "./datas";
 
 describe("somarMeses", () => {
     it("soma meses mantendo o dia", () => {
@@ -41,5 +41,12 @@ describe("formatData", () => {
         expect(formatData("2026-10-02")).toBe("02/10/2026");
         expect(formatData("2026-10-02T15:00:00Z")).toBe("02/10/2026");
         expect(formatData(null)).toBe("—");
+    });
+});
+
+describe("somarDias", () => {
+    it("soma dias atravessando mês e ano", () => {
+        expect(somarDias("2026-12-20", 15)).toBe("2027-01-04");
+        expect(somarDias("2026-10-02", 0)).toBe("2026-10-02");
     });
 });

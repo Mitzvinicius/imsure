@@ -27,3 +27,8 @@ export function formatData(dataIso: string | null): string {
     const [ano, mes, dia] = dataIso.slice(0, 10).split("-");
     return `${dia}/${mes}/${ano}`;
 }
+
+export function somarDias(dataIso: string, dias: number): string {
+    const [ano, mes, dia] = dataIso.slice(0, 10).split("-").map(Number);
+    return new Date(Date.UTC(ano, mes - 1, dia + dias)).toISOString().slice(0, 10);
+}
