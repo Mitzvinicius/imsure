@@ -21,6 +21,10 @@ insert into public.bens_auto (apolice_id, placa) values ('00000000-0000-0000-000
 insert into public.endossos (id, apolice_id, numero, tipo) values ('00000000-0000-0000-0000-00000000e0aa', '00000000-0000-0000-0000-00000000a0aa', '1', 'inclusao');
 insert into public.vidas_seguradas (id, apolice_id, nome) values ('00000000-0000-0000-0000-00000000f0aa', '00000000-0000-0000-0000-00000000a0aa', 'Vida A');
 insert into public.beneficiarios (vida_segurada_id, nome, percentual) values ('00000000-0000-0000-0000-00000000f0aa', 'Benef A', 100);
+insert into public.sinistros (id, apolice_id, data_ocorrencia, tipo) values ('00000000-0000-0000-0000-00000000d0aa', '00000000-0000-0000-0000-00000000a0aa', '2026-05-01', 'Colisão');
+insert into public.sinistro_andamentos (sinistro_id, descricao, status_novo, usuario_nome) values ('00000000-0000-0000-0000-00000000d0aa', 'Sinistro aberto', 'aberto', 'Teste A');
+insert into public.apolice_anexos (apolice_id, sinistro_id, nome_arquivo, caminho_storage, usuario_nome)
+  values ('00000000-0000-0000-0000-00000000a0aa', '00000000-0000-0000-0000-00000000d0aa', 'bo.pdf', '00000000-0000-0000-0000-00000000a0aa/1-bo.pdf', 'Teste A');
 
 -- Como B
 set local role authenticated;
@@ -36,6 +40,9 @@ begin
   if (select count(*) from public.vidas_seguradas) <> 0 then raise exception 'FALHA: B vê vidas de A'; end if;
   if (select count(*) from public.beneficiarios) <> 0 then raise exception 'FALHA: B vê beneficiários de A'; end if;
   if (select count(*) from public.seguradoras) = 0 then raise exception 'FALHA: B não vê a lista de seguradoras'; end if;
+  if (select count(*) from public.sinistros) <> 0 then raise exception 'FALHA: B vê sinistros de A'; end if;
+  if (select count(*) from public.sinistro_andamentos) <> 0 then raise exception 'FALHA: B vê andamentos de A'; end if;
+  if (select count(*) from public.apolice_anexos) <> 0 then raise exception 'FALHA: B vê anexos de A'; end if;
 
   begin
     insert into public.parcelas (apolice_id, numero, vencimento, valor) values ('00000000-0000-0000-0000-00000000a0aa', 99, '2026-03-01', 10);
@@ -61,6 +68,7 @@ begin
   if (select count(*) from public.apolices) <> 1 then raise exception 'FALHA: A não vê a própria apólice'; end if;
   if (select count(*) from public.parcelas) <> 1 then raise exception 'FALHA: A não vê a própria parcela'; end if;
   if (select count(*) from public.beneficiarios) <> 1 then raise exception 'FALHA: A não vê o próprio beneficiário'; end if;
+  if (select count(*) from public.sinistro_andamentos) <> 1 then raise exception 'FALHA: A não vê o próprio andamento'; end if;
   insert into public.parcelas (apolice_id, endosso_id, numero, vencimento, valor)
     values ('00000000-0000-0000-0000-00000000a0aa', '00000000-0000-0000-0000-00000000e0aa', 1, '2026-04-01', 50);
 end $$;
