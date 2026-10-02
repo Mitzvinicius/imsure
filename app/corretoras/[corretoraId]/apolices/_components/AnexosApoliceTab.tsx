@@ -50,9 +50,14 @@ export default function AnexosApoliceTab({
         fd.set("arquivo", arquivo);
         if (sinistroId) fd.set("sinistroId", sinistroId);
         if (andamentoId) fd.set("andamentoId", andamentoId);
-        const r = await uploadAnexoApolice(fd);
-        setEnviando(false);
-        if (r.error) setErro(r.error); else carregar();
+        try {
+            const r = await uploadAnexoApolice(fd);
+            if (r.error) setErro(r.error); else carregar();
+        } catch {
+            setErro("Não foi possível enviar o arquivo (máximo 20MB).");
+        } finally {
+            setEnviando(false);
+        }
     }
 
     async function remover(id: string) {

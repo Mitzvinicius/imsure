@@ -1,4 +1,5 @@
 'use client';
+import CampoValor from "./CampoValor";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Box from "@mui/material/Box";
@@ -13,23 +14,13 @@ import Alert from "@mui/material/Alert";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { criarApolice, atualizarApolice } from "@/app/lib/actions-seguros";
 import { tipoBemDoRamo } from "@/app/lib/seguros/ramos";
-import { parseValorBR } from "@/app/lib/seguros/datas";
 import { validarApoliceForm } from "@/app/lib/seguros/validacao";
-import { LABEL_FORMA_PAGAMENTO, type ApoliceForm as ApoliceFormDados, type BemSeguradoForm, type ContatoResumo, type FormaPagamento, type Seguradora } from "@/app/lib/seguros/types";
+import { LABEL_FORMA_PAGAMENTO, type ApoliceForm as ApoliceFormDados, type ContatoResumo, type FormaPagamento, type Seguradora } from "@/app/lib/seguros/types";
 import ContatoPicker from "./ContatoPicker";
-import BemSeguradoFields, { AUTO_VAZIO, RC_VAZIO, RESIDENCIAL_VAZIO } from "./BemSeguradoFields";
+import BemSeguradoFields from "./BemSeguradoFields";
+import { bemVazioParaRamo } from "@/app/lib/seguros/bem";
 import CoberturasFields from "./CoberturasFields";
 import ParcelasFields from "./ParcelasFields";
-
-export function bemVazioParaRamo(ramo: string): BemSeguradoForm {
-    switch (tipoBemDoRamo(ramo)) {
-        case "auto": return { tipo: "auto", itens: [AUTO_VAZIO] };
-        case "residencial": return { tipo: "residencial", itens: [RESIDENCIAL_VAZIO] };
-        case "rc": return { tipo: "rc", itens: [RC_VAZIO] };
-        case "vida": return { tipo: "vida", itens: [] };
-        default: return { tipo: "livre", descricao: "" };
-    }
-}
 
 function Secao({ titulo, children }: { titulo: string; children: React.ReactNode }) {
     return (
@@ -39,8 +30,6 @@ function Secao({ titulo, children }: { titulo: string; children: React.ReactNode
         </Paper>
     );
 }
-
-const num = (n: number | null) => (n != null ? String(n).replace(".", ",") : "");
 
 export default function ApoliceForm({
     corretoraId,
@@ -132,8 +121,8 @@ export default function ApoliceForm({
                         <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
                             <TextField label="Início da vigência" type="date" required value={form.inicioVigencia} onChange={(e) => set({ inicioVigencia: e.target.value })} slotProps={{ inputLabel: { shrink: true } }} sx={{ flex: 1 }} />
                             <TextField label="Fim da vigência" type="date" required value={form.fimVigencia} onChange={(e) => set({ fimVigencia: e.target.value })} slotProps={{ inputLabel: { shrink: true } }} sx={{ flex: 1 }} />
-                            <TextField label="Prêmio total (R$)" value={num(form.premio)} onChange={(e) => set({ premio: parseValorBR(e.target.value) })} sx={{ flex: 1 }} />
-                            <TextField label="Comissão (%)" value={num(form.percentualComissao)} onChange={(e) => set({ percentualComissao: parseValorBR(e.target.value) })} sx={{ flex: 1 }} />
+                            <CampoValor label="Prêmio total (R$)" valor={form.premio} onValor={(premio) => set({ premio })} sx={{ flex: 1 }} />
+                            <CampoValor label="Comissão (%)" valor={form.percentualComissao} onValor={(percentualComissao) => set({ percentualComissao })} sx={{ flex: 1 }} />
                             <TextField select label="Forma de pagamento" value={form.formaPagamento} onChange={(e) => set({ formaPagamento: e.target.value as FormaPagamento })} sx={{ flex: 1 }}>
                                 {(Object.keys(LABEL_FORMA_PAGAMENTO) as FormaPagamento[]).map((f) => <MenuItem key={f} value={f}>{LABEL_FORMA_PAGAMENTO[f]}</MenuItem>)}
                             </TextField>

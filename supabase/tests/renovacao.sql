@@ -40,9 +40,18 @@ begin
     raise exception 'FALHA: criou negócio para apólice fora da janela, cancelada, vencida ou sem fluxo'; end if;
 end $$;
 
--- Sem etapa marcada: cai na primeira etapa por ordem
-update public.etapas set renovacao = false where fluxo_id = '00000000-0000-0000-0000-0000000001f0';
+-- Negócio de renovação apagado pelo corretor não volta no dia seguinte
 delete from public.negocios where apolice_renovada_id = '00000000-0000-0000-0000-0000000001a1';
+do $$
+begin
+  perform public.criar_negocios_renovacao('2026-10-03');
+  if exists (select 1 from public.negocios where apolice_renovada_id = '00000000-0000-0000-0000-0000000001a1') then
+    raise exception 'FALHA: negócio de renovação apagado voltou a ser criado'; end if;
+end $$;
+
+-- Sem etapa marcada: cai na primeira etapa por ordem (zera a marca para gerar de novo)
+update public.etapas set renovacao = false where fluxo_id = '00000000-0000-0000-0000-0000000001f0';
+update public.apolices set renovacao_gerada_em = null where id = '00000000-0000-0000-0000-0000000001a1';
 do $$
 begin
   perform public.criar_negocios_renovacao('2026-10-02');

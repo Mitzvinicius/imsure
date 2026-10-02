@@ -23,10 +23,15 @@ export type ApoliceOpcao = {
     bens_residencial: { id: string; logradouro: string | null; numero: string | null }[];
 };
 
+function bemUnico(a: ApoliceOpcao | null): string {
+    return a && a.bens_auto.length + a.bens_residencial.length === 1 ? (a.bens_auto[0]?.id ?? a.bens_residencial[0].id) : "";
+}
+
 export default function NovoSinistroForm({ corretoraId, apolices, apoliceInicialId }: { corretoraId: string; apolices: ApoliceOpcao[]; apoliceInicialId: string | null }) {
     const router = useRouter();
-    const [apolice, setApolice] = useState<ApoliceOpcao | null>(apolices.find((a) => a.id === apoliceInicialId) ?? null);
-    const [bemId, setBemId] = useState("");
+    const apoliceInicial = apolices.find((a) => a.id === apoliceInicialId) ?? null;
+    const [apolice, setApolice] = useState<ApoliceOpcao | null>(apoliceInicial);
+    const [bemId, setBemId] = useState(bemUnico(apoliceInicial));
     const [data, setData] = useState(hojeSaoPaulo());
     const [tipo, setTipo] = useState("");
     const [descricao, setDescricao] = useState("");
@@ -73,7 +78,7 @@ export default function NovoSinistroForm({ corretoraId, apolices, apoliceInicial
                         onChange={(_e, a) => {
                             setApolice(a);
                             setTipo("");
-                            setBemId(a && a.bens_auto.length + a.bens_residencial.length === 1 ? (a.bens_auto[0]?.id ?? a.bens_residencial[0].id) : "");
+                            setBemId(bemUnico(a));
                         }}
                         renderInput={(p) => <TextField {...p} label="Apólice" required />}
                     />

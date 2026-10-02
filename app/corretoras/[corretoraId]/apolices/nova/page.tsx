@@ -1,7 +1,8 @@
 import { createClient } from "@/utils/supabase/server";
 import { RAMOS_OPCOES } from "@/app/lib/seguros/ramos";
 import type { ContatoResumo, Seguradora } from "@/app/lib/seguros/types";
-import ApoliceForm, { bemVazioParaRamo } from "../_components/ApoliceForm";
+import ApoliceForm from "../_components/ApoliceForm";
+import { bemVazioParaRamo } from "@/app/lib/seguros/bem";
 import { formVazio } from "../_components/carregarApolice";
 
 export default async function Page({

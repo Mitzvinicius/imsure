@@ -1,4 +1,5 @@
 'use client';
+import CampoValor from "./CampoValor";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Stack from "@mui/material/Stack";
@@ -16,16 +17,67 @@ import DialogActions from "@mui/material/DialogActions";
 import TextField from "@mui/material/TextField";
 import Alert from "@mui/material/Alert";
 import Typography from "@mui/material/Typography";
-import { atualizarParcela, darBaixaManual } from "@/app/lib/actions-seguros";
-import { formatData, parseValorBR } from "@/app/lib/seguros/datas";
-import { LABEL_STATUS_PARCELA, type Endosso, type Parcela } from "@/app/lib/seguros/types";
+import { adicionarParcelas, atualizarParcela, darBaixaManual } from "@/app/lib/actions-seguros";
+import { formatData } from "@/app/lib/seguros/datas";
+import { LABEL_STATUS_PARCELA, type Endosso, type Parcela, type ParcelaForm } from "@/app/lib/seguros/types";
 import { formatBRL } from "../../funis/constants";
+import ParcelasFields from "./ParcelasFields";
 
 const COR = { aberta: "default", paga: "success", comissao_recebida: "info" } as const;
-const num = (n: number | null) => (n != null ? String(n).replace(".", ",") : "");
 
-export default function ParcelasTab({ parcelas, endossos, mostrarBoleto }: { parcelas: Parcela[]; endossos: Endosso[]; mostrarBoleto: boolean }) {
+export default function ParcelasTab({
+    apoliceId,
+    parcelas,
+    endossos,
+    mostrarBoleto,
+    premio,
+    percentualComissao,
+}: {
+    apoliceId: string;
+    parcelas: Parcela[];
+    endossos: Endosso[];
+    mostrarBoleto: boolean;
+    premio: number | null;
+    percentualComissao: number | null;
+}) {
     const router = useRouter();
+    const [adicionando, setAdicionando] = useState(false);
+    const [novas, setNovas] = useState<ParcelaForm[]>([]);
+    const [erroNovas, setErroNovas] = useState<string | null>(null);
+    const ultimoNumero = Math.max(0, ...parcelas.filter((p) => !p.endosso_id).map((p) => p.numero));
+
+    async function salvarNovas() {
+        setErroNovas(null);
+        const r = await adicionarParcelas({
+            apoliceId,
+            endossoId: null,
+            parcelas: novas.map((p, i) => ({ ...p, numero: ultimoNumero + i + 1 })),
+        });
+        if (r.error) { setErroNovas(r.error); return; }
+        setAdicionando(false);
+        setNovas([]);
+        router.refresh();
+    }
+
+    const dialogAdicionar = (
+        <Dialog open={adicionando} onClose={() => setAdicionando(false)} fullWidth maxWidth="md">
+            <DialogTitle>Adicionar parcelas da apólice</DialogTitle>
+            <DialogContent>
+                <Stack spacing={1.5} sx={{ mt: 1 }}>
+                    {ultimoNumero > 0 && <Typography variant="body2" color="text.secondary">As novas parcelas serão numeradas a partir de {ultimoNumero + 1}.</Typography>}
+                    <ParcelasFields parcelas={novas} onChange={setNovas} premio={premio} percentualComissao={percentualComissao} mostrarBoleto={mostrarBoleto} />
+                    {erroNovas && <Alert severity="error">{erroNovas}</Alert>}
+                </Stack>
+            </DialogContent>
+            <DialogActions>
+                <Button onClick={() => setAdicionando(false)}>Cancelar</Button>
+                <Button variant="contained" disabled={!novas.length} onClick={salvarNovas}>Salvar parcelas</Button>
+            </DialogActions>
+        </Dialog>
+    );
+    const botaoAdicionar = (
+        <Button variant="outlined" sx={{ alignSelf: "flex-start" }} onClick={() => setAdicionando(true)}>Adicionar parcelas</Button>
+    );
     const [editando, setEditando] = useState<Parcela | null>(null);
     const [erro, setErro] = useState<string | null>(null);
     const nomeEndosso = (id: string | null) => (id ? `Endosso ${endossos.find((e) => e.id === id)?.numero ?? ""}` : "Apólice");
@@ -53,10 +105,20 @@ export default function ParcelasTab({ parcelas, endossos, mostrarBoleto }: { par
         router.refresh();
     }
 
-    if (!parcelas.length) return <Typography color="text.secondary">Nenhuma parcela cadastrada.</Typography>;
+    if (!parcelas.length) {
+        return (
+            <Stack spacing={1.5}>
+                <Typography color="text.secondary">Nenhuma parcela cadastrada.</Typography>
+                {botaoAdicionar}
+                {dialogAdicionar}
+            </Stack>
+        );
+    }
 
     return (
         <Stack spacing={1.5}>
+            {botaoAdicionar}
+            {dialogAdicionar}
             {erro && <Alert severity="error">{erro}</Alert>}
             <Table size="small">
                 <TableHead>
@@ -93,8 +155,8 @@ export default function ParcelasTab({ parcelas, endossos, mostrarBoleto }: { par
                     <DialogContent>
                         <Stack spacing={1.5} sx={{ mt: 1 }}>
                             <TextField label="Vencimento" type="date" value={editando.vencimento} onChange={(e) => setEditando({ ...editando, vencimento: e.target.value })} slotProps={{ inputLabel: { shrink: true } }} />
-                            <TextField label="Valor (R$)" value={num(editando.valor)} onChange={(e) => setEditando({ ...editando, valor: parseValorBR(e.target.value) ?? 0 })} />
-                            <TextField label="Comissão esperada (R$)" value={num(editando.comissao_esperada)} onChange={(e) => setEditando({ ...editando, comissao_esperada: parseValorBR(e.target.value) })} />
+                            <CampoValor label="Valor (R$)" valor={editando.valor} onValor={(v) => setEditando({ ...editando, valor: v ?? 0 })} />
+                            <CampoValor label="Comissão esperada (R$)" valor={editando.comissao_esperada} onValor={(v) => setEditando({ ...editando, comissao_esperada: v })} />
                             {mostrarBoleto && (
                                 <>
                                     <TextField label="Linha digitável" value={editando.linha_digitavel ?? ""} onChange={(e) => setEditando({ ...editando, linha_digitavel: e.target.value || null })} />

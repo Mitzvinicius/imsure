@@ -1,14 +1,12 @@
 'use client';
+import CampoValor from "./CampoValor";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import MenuItem from "@mui/material/MenuItem";
-import { parseValorBR } from "@/app/lib/seguros/datas";
 import type { BemAutoForm, BemResidencialForm, BemRcForm, BemSeguradoForm } from "@/app/lib/seguros/types";
 import VidasFields from "./VidasFields";
+import { AUTO_VAZIO, RC_VAZIO, RESIDENCIAL_VAZIO } from "@/app/lib/seguros/bem";
 
-export const AUTO_VAZIO: BemAutoForm = { placa: "", chassi: "", marca: "", modelo: "", ano_fabricacao: null, ano_modelo: null, cep_pernoite: "" };
-export const RESIDENCIAL_VAZIO: BemResidencialForm = { cep: "", logradouro: "", numero: "", complemento: "", bairro: "", cidade: "", uf: "", tipo_imovel: "casa" };
-export const RC_VAZIO: BemRcForm = { atividade: "", limite: null };
 
 const ano = (s: string) => (s ? Number(s.replace(/\D/g, "").slice(0, 4)) || null : null);
 
@@ -68,7 +66,7 @@ export default function BemSeguradoFields({ bem, onChange }: { bem: BemSeguradoF
     return (
         <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
             <TextField label="Atividade coberta" required value={v.atividade} onChange={(e) => set({ atividade: e.target.value })} sx={{ flex: 2 }} />
-            <TextField label="Limite (R$)" value={v.limite != null ? String(v.limite).replace(".", ",") : ""} onChange={(e) => set({ limite: parseValorBR(e.target.value) })} sx={{ flex: 1 }} />
+            <CampoValor label="Limite (R$)" valor={v.limite} onValor={(limite) => set({ limite })} sx={{ flex: 1 }} />
         </Stack>
     );
 }

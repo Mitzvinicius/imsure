@@ -5,6 +5,7 @@ import { validarApoliceForm } from "@/app/lib/seguros/validacao";
 import { mensagemErroSeguros } from "@/app/lib/seguros/erros";
 import { hojeSaoPaulo } from "@/app/lib/seguros/datas";
 import { statusValidoParaRamo } from "@/app/lib/seguros/sinistros";
+import { nomeSeguroParaStorage } from "@/app/lib/seguros/arquivos";
 import type { AnexoApolice, ApoliceForm, CoberturaForm, ParcelaForm, TipoEndosso } from "@/app/lib/seguros/types";
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;
@@ -21,7 +22,7 @@ function erroContato(error: { code?: string; message: string }) {
     return error.message;
 }
 
-async function resolverContato(supabase: Supabase, corretoraId: string, dados: ApoliceForm): Promise<{ error: string | null; contatoId: string | null }> {
+async function resolverContato(supabase: Supabase, corretoraId: string, dados: ApoliceForm): Promise<{ error: string | null; contatoId: string | null; criado?: boolean }> {
     if (dados.contatoId) {
         const { data } = await supabase
             .from("contatos")
@@ -46,15 +47,20 @@ async function resolverContato(supabase: Supabase, corretoraId: string, dados: A
         .select("id")
         .single();
     if (error || !data) return { error: error ? erroContato(error) : "Não foi possível criar o contato", contatoId: null };
-    return { error: null, contatoId: data.id as string };
+    return { error: null, contatoId: data.id as string, criado: true };
 }
 
+const TABELA_BEM = { auto: "bens_auto", residencial: "bens_residencial", rc: "bens_rc", vida: "vidas_seguradas" } as const;
+
 async function salvarBem(supabase: Supabase, apoliceId: string, dados: ApoliceForm): Promise<string | null> {
-    for (const tabela of ["bens_auto", "bens_residencial", "bens_rc", "vidas_seguradas"]) {
+    const bem = dados.bem;
+    // Tabelas de outros ramos (se o ramo mudou) são limpas; a do ramo atual é atualizada no lugar,
+    // para não quebrar sinistros.bem_auto_id / bem_residencial_id (ON DELETE SET NULL).
+    for (const [tipo, tabela] of Object.entries(TABELA_BEM)) {
+        if (tipo === bem.tipo && tipo !== "vida") continue;
         const { error } = await supabase.from(tabela).delete().eq("apolice_id", apoliceId);
         if (error) return mensagemErroSeguros(error);
     }
-    const bem = dados.bem;
     if (bem.tipo === "livre") return null;
     if (bem.tipo === "vida") {
         for (const vida of bem.itens) {
@@ -73,10 +79,25 @@ async function salvarBem(supabase: Supabase, apoliceId: string, dados: ApoliceFo
         }
         return null;
     }
-    const tabela = bem.tipo === "auto" ? "bens_auto" : bem.tipo === "residencial" ? "bens_residencial" : "bens_rc";
-    if (!bem.itens.length) return null;
-    const { error } = await supabase.from(tabela).insert(bem.itens.map((i) => ({ ...i, apolice_id: apoliceId })));
-    return error ? mensagemErroSeguros(error) : null;
+
+    const tabela = TABELA_BEM[bem.tipo];
+    const { data: existentes, error: erroBusca } = await supabase.from(tabela).select("id").eq("apolice_id", apoliceId).order("criado_em");
+    if (erroBusca) return mensagemErroSeguros(erroBusca);
+    const ids = (existentes ?? []).map((e) => e.id as string);
+
+    const itens: Record<string, unknown>[] = bem.itens;
+    for (let i = 0; i < itens.length; i++) {
+        const { error } = ids[i]
+            ? await supabase.from(tabela).update(itens[i]).eq("id", ids[i])
+            : await supabase.from(tabela).insert({ ...itens[i], apolice_id: apoliceId });
+        if (error) return mensagemErroSeguros(error);
+    }
+    const sobrando = ids.slice(itens.length);
+    if (sobrando.length) {
+        const { error } = await supabase.from(tabela).delete().in("id", sobrando);
+        if (error) return mensagemErroSeguros(error);
+    }
+    return null;
 }
 
 async function salvarCoberturasDaApolice(supabase: Supabase, apoliceId: string, coberturas: CoberturaForm[]): Promise<string | null> {
@@ -114,13 +135,36 @@ function linhasParcelas(apoliceId: string, endossoId: string | null, parcelas: P
     }));
 }
 
+async function validarReferenciasApolice(supabase: Supabase, corretoraId: string, dados: ApoliceForm): Promise<string | null> {
+    if (dados.negocioOrigemId) {
+        const { data } = await supabase
+            .from("negocios")
+            .select("id, etapa:etapas!inner(fluxo:fluxos!inner(corretora_id))")
+            .eq("id", dados.negocioOrigemId)
+            .eq("etapa.fluxo.corretora_id", corretoraId)
+            .maybeSingle();
+        if (!data) return "Negócio de origem não encontrado nesta corretora.";
+    }
+    if (dados.apoliceAnteriorId) {
+        const { data } = await supabase.from("apolices").select("id").eq("id", dados.apoliceAnteriorId).eq("corretora_id", corretoraId).maybeSingle();
+        if (!data) return "Apólice anterior não encontrada nesta corretora.";
+    }
+    return null;
+}
+
 export async function criarApolice({ corretoraId, dados }: { corretoraId: string; dados: ApoliceForm }) {
     const erroValidacao = validarApoliceForm(dados);
     if (erroValidacao) return { error: erroValidacao, apoliceId: null };
 
     const supabase = await createClient();
+    const erroRef = await validarReferenciasApolice(supabase, corretoraId, dados);
+    if (erroRef) return { error: erroRef, apoliceId: null };
+
     const contato = await resolverContato(supabase, corretoraId, dados);
     if (contato.error || !contato.contatoId) return { error: contato.error, apoliceId: null };
+    const removerContatoCriado = async () => {
+        if (contato.criado) await supabase.from("contatos").delete().eq("id", contato.contatoId!);
+    };
 
     const { data: apolice, error } = await supabase
         .from("apolices")
@@ -133,11 +177,15 @@ export async function criarApolice({ corretoraId, dados }: { corretoraId: string
         })
         .select("id")
         .single();
-    if (error || !apolice) return { error: error ? mensagemErroSeguros(error) : "Não foi possível criar a apólice", apoliceId: null };
+    if (error || !apolice) {
+        await removerContatoCriado();
+        return { error: error ? mensagemErroSeguros(error) : "Não foi possível criar a apólice", apoliceId: null };
+    }
 
     const apoliceId = apolice.id as string;
     const desfazer = async (mensagem: string) => {
         await supabase.from("apolices").delete().eq("id", apoliceId);
+        await removerContatoCriado();
         return { error: mensagem, apoliceId: null };
     };
 
@@ -304,16 +352,33 @@ export async function uploadAnexoApolice(formData: FormData) {
         return typeof v === "string" && v ? v : null;
     };
 
-    const caminho = `${apoliceId}/${Date.now()}-${arquivo.name}`;
+    const endossoId = opcional("endossoId");
+    const parcelaId = opcional("parcelaId");
+    const sinistroId = opcional("sinistroId");
+    const andamentoId = opcional("andamentoId");
+    const pertence = async (tabela: string, id: string | null) => {
+        if (!id) return true;
+        const { data } = await supabase.from(tabela).select("id").eq("id", id).eq("apolice_id", apoliceId).maybeSingle();
+        return !!data;
+    };
+    if (!(await pertence("endossos", endossoId)) || !(await pertence("parcelas", parcelaId)) || !(await pertence("sinistros", sinistroId))) {
+        return { error: "Registro não pertence a esta apólice" };
+    }
+    if (andamentoId) {
+        const { data } = await supabase.from("sinistro_andamentos").select("id, sinistro:sinistros!inner(apolice_id)").eq("id", andamentoId).eq("sinistro.apolice_id", apoliceId).maybeSingle();
+        if (!data) return { error: "Registro não pertence a esta apólice" };
+    }
+
+    const caminho = `${apoliceId}/${Date.now()}-${nomeSeguroParaStorage(arquivo.name)}`;
     const { error: erroUpload } = await supabase.storage.from(BUCKET_ANEXOS_APOLICE).upload(caminho, arquivo);
     if (erroUpload) return { error: erroUpload.message };
 
     const { error: erroInsert } = await supabase.from("apolice_anexos").insert({
         apolice_id: apoliceId,
-        endosso_id: opcional("endossoId"),
-        parcela_id: opcional("parcelaId"),
-        sinistro_id: opcional("sinistroId"),
-        sinistro_andamento_id: opcional("andamentoId"),
+        endosso_id: endossoId,
+        parcela_id: parcelaId,
+        sinistro_id: sinistroId,
+        sinistro_andamento_id: andamentoId,
         usuario_id: user.id,
         usuario_nome: nomeUsuario(user),
         nome_arquivo: arquivo.name,
@@ -363,6 +428,12 @@ export async function criarSinistro({
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { error: "Usuario não encontrado", sinistroId: null };
+
+    for (const [tabela, id] of [["bens_auto", bemAutoId], ["bens_residencial", bemResidencialId]] as const) {
+        if (!id) continue;
+        const { data } = await supabase.from(tabela).select("id").eq("id", id).eq("apolice_id", apoliceId).maybeSingle();
+        if (!data) return { error: "Bem segurado não pertence a esta apólice", sinistroId: null };
+    }
 
     const { data: sinistro, error } = await supabase
         .from("sinistros")

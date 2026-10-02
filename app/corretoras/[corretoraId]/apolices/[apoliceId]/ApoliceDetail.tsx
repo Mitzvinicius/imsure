@@ -126,7 +126,7 @@ export default function ApoliceDetail(props: {
                         </Stack>
                     </Stack>
                 )}
-                {aba === "parcelas" && <ParcelasTab parcelas={props.parcelas} endossos={props.endossos} mostrarBoleto={mostrarBoleto} />}
+                {aba === "parcelas" && <ParcelasTab apoliceId={apoliceId} parcelas={props.parcelas} endossos={props.endossos} mostrarBoleto={mostrarBoleto} premio={form.premio} percentualComissao={form.percentualComissao} />}
                 {aba === "endossos" && (
                     <EndossosTab apoliceId={apoliceId} endossos={props.endossos} coberturasEndosso={props.coberturasEndosso} percentualComissao={form.percentualComissao} mostrarBoleto={mostrarBoleto} />
                 )}

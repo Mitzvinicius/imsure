@@ -1,4 +1,5 @@
 'use client';
+import CampoValor from "./CampoValor";
 import { useState } from "react";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
@@ -7,11 +8,8 @@ import IconButton from "@mui/material/IconButton";
 import Alert from "@mui/material/Alert";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutlined";
 import { gerarParcelas, diferencaCentavos } from "@/app/lib/seguros/parcelas";
-import { parseValorBR } from "@/app/lib/seguros/datas";
 import type { ParcelaForm } from "@/app/lib/seguros/types";
 import { formatBRL } from "../../funis/constants";
-
-const num = (n: number | null) => (n != null ? String(n).replace(".", ",") : "");
 
 export default function ParcelasFields({
     parcelas,
@@ -60,8 +58,8 @@ export default function ParcelasFields({
                 <Stack key={i} direction={{ xs: "column", md: "row" }} spacing={1.5} sx={{ alignItems: "center" }}>
                     <TextField size="small" label="Nº" value={p.numero} sx={{ width: 70 }} slotProps={{ htmlInput: { readOnly: true } }} />
                     <TextField size="small" label="Vencimento" type="date" value={p.vencimento} onChange={(e) => set(i, { vencimento: e.target.value })} slotProps={{ inputLabel: { shrink: true } }} />
-                    <TextField size="small" label="Valor (R$)" value={num(p.valor)} onChange={(e) => set(i, { valor: parseValorBR(e.target.value) ?? 0 })} sx={{ width: 130 }} />
-                    <TextField size="small" label="Comissão esperada (R$)" value={num(p.comissao_esperada)} onChange={(e) => set(i, { comissao_esperada: parseValorBR(e.target.value) })} sx={{ width: 180 }} />
+                    <CampoValor size="small" label="Valor (R$)" valor={p.valor} onValor={(v) => set(i, { valor: v ?? 0 })} sx={{ width: 130 }} />
+                    <CampoValor size="small" label="Comissão esperada (R$)" valor={p.comissao_esperada} onValor={(v) => set(i, { comissao_esperada: v })} sx={{ width: 180 }} />
                     {mostrarBoleto && (
                         <>
                             <TextField size="small" label="Linha digitável" value={p.linha_digitavel ?? ""} onChange={(e) => set(i, { linha_digitavel: e.target.value || null })} sx={{ flex: 1 }} />
