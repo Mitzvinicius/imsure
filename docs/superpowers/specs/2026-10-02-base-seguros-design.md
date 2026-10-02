@@ -46,7 +46,7 @@ Convenções do projeto mantidas: nomes em português, `id uuid default gen_rand
 
 - `corretoras.dias_antecedencia_renovacao integer not null default 60 check (> 0 and <= 365)`
 - `etapas.renovacao boolean not null default false` — no máximo uma etapa marcada por fluxo (índice único parcial em `fluxo_id where renovacao`).
-  - Migração: marca a etapa chamada `Renovações` (sem diferenciar maiúsculas/acentos) de cada fluxo, se existir.
+  - Migração: marca a primeira etapa (por `ordem`) cujo nome contém "renova" (sem diferenciar maiúsculas/acentos) — o funil padrão do onboarding se chama "Prospecção / Renovações".
   - Onboarding (`salvarFluxoVendas`): passa a marcar a etapa "Renovações" do modelo padrão.
 - `negocios.apolice_renovada_id uuid null references apolices on delete set null` — **único** quando não nulo; é a garantia de que a rotina de renovação nunca duplica.
 
@@ -66,7 +66,7 @@ Convenções do projeto mantidas: nomes em português, `id uuid default gen_rand
 - `descricao_bem text null` (para ramos sem tabela própria)
 - `negocio_origem_id` → `negocios` (null no cadastro direto; único quando não nulo), `apolice_anterior_id` → `apolices` (null se não for renovação)
 - **Único**: `(seguradora_id, numero)` — base do cruzamento da baixa de comissão
-- **Status é derivado, não armazenado** (view `apolices_com_status` ou função): `cancelada` se `cancelada_em`; senão `renovada` se existe apólice com `apolice_anterior_id = id`; senão `vencida` se `fim_vigencia < hoje`; senão `vigente`.
+- **Status é derivado em TypeScript** (`calcularStatusApolice`, sem view no banco): `cancelada` se `cancelada_em`; senão `renovada` se existe apólice com `apolice_anterior_id = id`; senão `vencida` se `fim_vigencia < hoje`; senão `vigente`.
 
 **`endossos`**
 - `apolice_id`, `numero text not null`, `tipo text not null check in ('alteracao_bem','inclusao','exclusao','alteracao_cobertura','cancelamento','outro')`, `data_emissao date`, `descricao text`, `valor numeric(12,2)` (pode ser negativo — restituição)
@@ -104,7 +104,7 @@ Convenções do projeto mantidas: nomes em português, `id uuid default gen_rand
 **`apolice_anexos`**
 - `apolice_id not null`, `endosso_id null`, `parcela_id null`, `sinistro_id null`, `sinistro_andamento_id null`
 - `nome_arquivo`, `caminho_storage`, `tamanho_bytes`, `tipo_mime`, `usuario_id`, `usuario_nome` (mesmo padrão de `negocio_anexos`)
-- Bucket privado novo `apolice-anexos` (mesmo padrão do `negocio-anexos`), caminho `corretora_id/apolice_id/arquivo`.
+- Bucket privado novo `apolice-anexos` (mesmo padrão do `negocio-anexos`), caminho `apolice_id/timestamp-arquivo`.
 
 ### RLS
 
@@ -117,7 +117,7 @@ Convenções do projeto mantidas: nomes em português, `id uuid default gen_rand
 
 - Função SQL `criar_negocios_renovacao()` (`security definer`), agendada diariamente via `pg_cron` (extensão disponível, a habilitar).
 - Seleciona apólices `vigente` com `fim_vigencia - corretora.dias_antecedencia_renovacao <= hoje` e sem negócio com `apolice_renovada_id = apolice.id`.
-- Cria `negocios` com: `contato_id` e `ramo` da apólice, `tipo = 'Renovação'`, `seguradora` = nome da seguradora, `etapa_id` = etapa `renovacao = true` do fluxo ativo (fallback: primeira etapa por `ordem`), `vendedor_usuario_id` = vendedor do negócio de origem (fallback: dono da conta), `valor` = prêmio atual.
+- Cria `negocios` com: `contato_id` e `ramo` da apólice, `tipo = 'Renovação simples'` (valor já existente em `TIPOS`), `origem = 'Renovação'`, `seguradora` = nome da seguradora, `etapa_id` = etapa `renovacao = true` do fluxo ativo (fallback: primeira etapa por `ordem`), `vendedor_usuario_id` = vendedor do negócio de origem (fallback: dono da conta), `valor` = prêmio atual.
 - Idempotente pelo índice único em `negocios.apolice_renovada_id` (`on conflict do nothing`).
 - Ao emitir apólice a partir de um negócio de renovação, a nova apólice recebe `apolice_anterior_id` = `apolice_renovada_id` do negócio.
 
@@ -139,10 +139,10 @@ Padrão do projeto: `page.tsx` (Server Component, guarda + dados) + `NomeDaPagin
 
 ## Server Actions
 
-Em `app/lib/` (arquivo novo `actions-seguros.ts` para não inchar `actions.ts`), todas no padrão `{ error: string | null }`, sem `redirect()`:
-`criarApolice`, `atualizarApolice`, `cancelarApolice`, `criarEndosso`, `gerarParcelas`, `atualizarParcela`, `darBaixaManual`, `salvarCoberturas`, `salvarBemSegurado`, `criarSinistro`, `registrarAndamento` (muda status junto, se informado), `enviarAnexoApolice`, `atualizarConfiguracoesCorretora`.
+Em `app/lib/actions-seguros.ts`, todas no padrão `{ error: string | null }`, sem `redirect()`:
+`criarApolice`, `atualizarApolice`, `cancelarApolice`, `adicionarParcelas`, `atualizarParcela`, `darBaixaManual`, `criarEndosso`, `listarAnexosApolice`, `uploadAnexoApolice`, `deletarAnexoApolice`, `criarSinistro`, `atualizarSinistro`, `registrarAndamento`, `atualizarConfiguracoesCorretora`.
 
-Erros do Postgres traduzidos para mensagem amigável (mesmo padrão de `mensagemErroContato`): `23505` em `(seguradora_id, numero)` → "Já existe uma apólice com esse número nessa seguradora".
+Erros do Postgres traduzidos por `mensagemErroSeguros` (`app/lib/seguros/erros.ts`), pelo nome da constraint.
 
 ## Regras de negócio
 

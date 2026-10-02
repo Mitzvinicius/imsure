@@ -27,6 +27,9 @@ CRM/ERP para corretoras de seguros, multi-tenant (uma conta pode ter múltiplas 
 | `/onboarding/[corretoraId]` | `app/onboarding/[corretoraId]/OnboardingWizard.tsx` | Onboarding em 5 etapas, estilo Typeform (tela cheia, uma etapa por vez) |
 | `/corretoras/[corretoraId]/funis` | `app/corretoras/[corretoraId]/funis/FunisPage.tsx` | Kanban/Lista de negócios do funil ativo da corretora |
 | `/corretoras/[corretoraId]/contatos` | `app/corretoras/[corretoraId]/contatos/ContatosPage.tsx` | Lista de contatos da corretora (lê do banco de verdade) |
+| `/corretoras/[corretoraId]/apolices` (+ `nova`, `[apoliceId]`, `[apoliceId]/editar`) | `apolices/ApolicesPage.tsx`, `_components/ApoliceForm.tsx`, `[apoliceId]/ApoliceDetail.tsx` | Carteira: lista com filtros, cadastro (bem segurado por ramo, coberturas, parcelas), detalhe com abas Parcelas/Endossos/Sinistros/Anexos |
+| `/corretoras/[corretoraId]/sinistros` (+ `novo`, `[sinistroId]`) | `sinistros/SinistrosPage.tsx`, `novo/NovoSinistroForm.tsx`, `[sinistroId]/SinistroDetail.tsx` | Sinistros com status por ramo e histórico de andamentos |
+| `/corretoras/[corretoraId]/configuracoes` | `configuracoes/ConfiguracoesPage.tsx` | Dias de antecedência e etapa do funil da renovação automática |
 
 `app/corretoras/[corretoraId]/layout.tsx` é o layout compartilhado dessas duas últimas rotas: faz a guarda de autenticação/posse da corretora e renderiza a `Sidebar` (seletor de conta + nav Funis/Contatos) em volta do conteúdo.
 
@@ -34,13 +37,17 @@ CRM/ERP para corretoras de seguros, multi-tenant (uma conta pode ter múltiplas 
 
 ## Server Actions
 - `app/lib/actions.ts` — `criarConta`, `atualizarDadosCorretora`, `salvarRamosAtuacao`, `salvarFluxoVendas`, `selecionarPlano`, `concluirOnboarding`, `definirFunilAtivo`, `buscarContatos`, `criarNegocio`, `moverNegocio`, `atualizarNegocio`, `atualizarContato`, `deletarNegocio`
+- `app/lib/actions-seguros.ts` — `criarApolice`, `atualizarApolice`, `cancelarApolice`, `adicionarParcelas`, `atualizarParcela`, `darBaixaManual`, `criarEndosso`, `listarAnexosApolice`, `uploadAnexoApolice`, `deletarAnexoApolice`, `criarSinistro`, `atualizarSinistro`, `registrarAndamento`, `atualizarConfiguracoesCorretora`
+- Regras puras (testadas com Vitest) em `app/lib/seguros/`: ramos, datas, parcelas, status, sinistros, renovação, validação, mensagens de erro, tipos.
 - `app/auth/actions.ts` — `signIn`, `createNewUser`
 - **Padrão**: toda action retorna `{ error: string | null }`. Nenhuma lança exceção nem chama `redirect()` internamente — quem navega em caso de sucesso é o componente cliente (`router.push`/`router.refresh`). Isso evita um bug real do Next.js: `redirect()` dentro de um `try/catch` no cliente pode ser "engolido" e nunca navegar.
 
 ## Banco de dados (Supabase)
 Hierarquia: `planos` → `contas` (dono = `owner_usuario_id`) → `corretoras` → `fluxos` → `etapas` → `negocios`. `corretoras` também tem `contatos` (pessoas cadastradas) — `negocios.contato_id` referencia `contatos`, `negocios.vendedor_usuario_id` referencia `usuarios`. `usuarios` espelha `auth.users` (criado via trigger `handle_new_user`).
 
-RLS ativo em tudo. Modelo de autorização: **dono da `conta` controla tudo abaixo na hierarquia** (verificado via subquery `contas.owner_usuario_id = auth.uid()` em cada tabela filha, subindo a cadeia de FKs). `usuario_corretora` (multi-usuário por corretora) ainda não existe — hoje só o dono acessa; `negocios.vendedor_usuario_id` já existe pensando nisso (ver `docs/decisoes.md`).
+Seguros: `corretoras` → `apolices` (cliente = `contato_id`, `seguradora_id` → `seguradoras`, lista **global**) → `endossos`, `parcelas` (da apólice ou de um endosso — a apólice **não** é "endosso 0"), `coberturas`, `bens_auto`/`bens_residencial`/`bens_rc`/`vidas_seguradas` → `beneficiarios`, `sinistros` → `sinistro_andamentos`, `apolice_anexos` (bucket privado `apolice-anexos`). Renovação: `negocios.apolice_renovada_id`, `etapas.renovacao`, `corretoras.dias_antecedencia_renovacao`, função `criar_negocios_renovacao()` agendada diariamente via `pg_cron`. Migrações versionadas em `supabase/migrations/` (aplicadas pelo MCP do Supabase) e testes SQL em `supabase/tests/` (rodar com `execute_sql`; desfazem tudo com `rollback`).
+
+RLS ativo em tudo. Modelo de autorização: **dono da `conta` controla tudo abaixo na hierarquia** (verificado via subquery `contas.owner_usuario_id = auth.uid()` em cada tabela filha, subindo a cadeia de FKs). `usuario_corretora` (multi-usuário por corretora) ainda não existe — hoje só o dono acessa; `negocios.vendedor_usuario_id` já existe pensando nisso (ver `docs/decisoes.md`). Tabelas de seguros usam as funções helper `usuario_possui_corretora(id)`/`usuario_possui_apolice(id)` (security definer, executáveis só por `authenticated`).
 
 `contatos.cpf_cnpj` é um campo único (CPF **ou** CNPJ, detectado automaticamente pela quantidade de dígitos — vira `contatos.tipo_pessoa`), com constraint de unicidade por corretora.
 
@@ -71,7 +78,7 @@ Skills instaladas em `.claude/skills/` — carregadas automaticamente quando a t
 - `pnpm build` — build de produção
 - `pnpm lint` — lint
 - `pnpm install` — dependências
-- Não existe suíte de testes configurada ainda (não há script `test` no `package.json`).
+- `pnpm test` — Vitest (lógica pura em `app/lib/seguros/*.test.ts`)
 
 ## Convenções de commit
 Conventional Commits (`feat:`, `fix:`, `chore:`, ...) — commits anteriores no histórico não seguem esse padrão ainda (foram feitos antes dessa convenção ser adotada), mas é o padrão a seguir daqui pra frente.
@@ -86,7 +93,9 @@ Conventional Commits (`feat:`, `fix:`, `chore:`, ...) — commits anteriores no 
 - **Turbopack (dev) trava com "Jest worker encountered N child process exceptions"** depois de muitas mudanças de estrutura de pasta (criar/mover/apagar arquivos em lote) — não é bug de código (o `next build` de produção sempre compilou limpo nessas ocasiões). Resolve com `rm -rf .next` + reiniciar o `pnpm dev`.
 - **Projeto Supabase pausa sozinho** (plano gratuito) depois de ~7 dias sem uso — sintoma: app não carrega nenhuma página. Reativar pelo dashboard ou pela integração do Supabase (`restore_project`).
 - `middleware.ts` da raiz: o Next 16 avisa que a convenção foi renomeada pra `proxy.ts` — só warning por enquanto.
-- Ainda não existem: `usuario_corretora` (convite de equipe), `cargos`, domínio de seguros de verdade além de `negocios`/`contatos` (apólices, endossos, sinistros), enforcement de limites de plano na aplicação.
+- **Seguradoras**: lista inicial sem telefones de assistência/sinistro nem código SUSEP — preencher com fonte oficial.
+- **Roadmap do portal do cliente** (ver `docs/superpowers/specs/2026-10-02-base-seguros-design.md`): etapa 1 (base de seguros) feita; faltam 1b baixa de comissão, 2 portal + PWA, 3 ações do cliente (aviso de sinistro/assistência), 4 comunicação (lembretes, renovação, promoções).
+- Ainda não existem: `usuario_corretora` (convite de equipe), `cargos`, enforcement de limites de plano na aplicação.
 
 ## Como o usuário gosta de trabalhar (importante)
 **Neste projeto, o Claude desenvolve o código e o usuário (Mitz) foca no produto.** Nada de método socrático, pseudocódigo ou "tenta escrever primeiro": implemente direto (features, correções, schema, infra), verifique que funciona e reporte o que foi feito. O papel do Mitz é decidir o quê e o porquê — requisitos, regras de negócio, prioridades, UX.

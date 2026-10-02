@@ -121,6 +121,20 @@ Criar um negócio sempre atribui `vendedor_usuario_id = auth.uid()` — não exi
 
 **Pendente**: validação do dígito verificador real de CPF/CNPJ (hoje só confere se tem 11 ou 14 dígitos) — perguntado ao usuário, sem resposta ainda.
 
+## Base de seguros (etapa 1 do portal do cliente)
+
+Spec completo: [`superpowers/specs/2026-10-02-base-seguros-design.md`](superpowers/specs/2026-10-02-base-seguros-design.md). O objetivo maior é um portal onde o segurado vê apólices/sinistros em todas as corretoras onde está cadastrado; esta etapa cria os dados que o portal vai mostrar.
+
+- **Cadastro manual agora, PDF depois**: o formulário é o mesmo que a extração de PDF vai preencher.
+- **Bem segurado com uma tabela por ramo** (auto, residencial, RC, vida + beneficiários) e descrição livre para os demais: validação no banco, busca por placa/chassi, mesmo padrão de RLS do resto.
+- **Apólice não é "endosso 0"**: parcela pertence à apólice e opcionalmente a um endosso — o extrato de comissão não traz número de endosso para parcelas originais, então um "endosso 0" geraria falsos desencontros na baixa (decisão do Mitz).
+- **Status da parcela virá da baixa de comissão** (etapa 1b); baixa manual existe como alternativa, e baixa vinda de extrato não pode ser desfeita à mão.
+- **Seguradoras numa lista global** mantida pelo imsure: telefones de assistência prontos para o portal e identificação consistente para cruzar extratos.
+- **Franquia por cobertura**, não por apólice.
+- **Sinistro com status por ramo** (auto tem vistoria/oficina) e **histórico de andamentos** para todos — é o "rastreio" que o cliente vai ver.
+- **Renovação automática** cria negócio X dias antes do fim da vigência (X por corretora), na etapa marcada como de renovação (`etapas.renovacao`, não pelo nome — renomear não quebra). Índice único em `negocios.apolice_renovada_id` impede duplicar.
+- **Status da apólice é calculado em TS**, não guardado: só o cancelamento é manual.
+
 ## Pendências técnicas conhecidas
 
 1. **`contas` sem policy de `UPDATE`** — `selecionarPlano` está quebrado (RLS bloqueia a troca de plano, silenciosamente, sem erro visível). Precisa de uma policy tipo:
