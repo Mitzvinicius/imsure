@@ -6,13 +6,13 @@
 CRM/ERP para corretoras de seguros, multi-tenant (uma conta pode ter múltiplas corretoras/filiais).
 
 - Branch atual: `sandbox-dashboard` (remote `origin` = https://github.com/Mitzvinicius/imsure)
-- Gerenciador de pacotes: `npm`
+- Gerenciador de pacotes: `pnpm` (migrado do npm pelo Carlos — `pnpm-lock.yaml` é o lockfile; o pnpm não está instalado globalmente na máquina do Mitz, então os comandos rodam via `npx -y pnpm@10 ...`)
 - Projeto Supabase: `imsure` (ref `bmovnppkcvpjeieyugdz`)
 - Existe um projeto irmão do tutorial "Next.js Learn Dashboard" puro em `nextjs-dashboard` (outra pasta, no OneDrive) — só referência de padrões, não é o mesmo repositório.
 
 ## Stack
 - Next.js (App Router) + TypeScript
-- Supabase (Postgres + RLS + Auth)
+- Supabase (Postgres + RLS + Auth) — clientes em `utils/supabase/`: `server.ts` (Server Components/Actions; `createClient()` sem argumentos, lê os cookies sozinho), `client.ts` (browser), `middleware.ts` (renova a sessão, usado pelo `middleware.ts` da raiz). Variáveis em `.env.local`: `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
 - Material UI (MUI) — usado em todo o projeto, ícones e componentes
 - **Planejado, ainda não integrado**: Stripe (pagamentos/assinaturas). Hoje a escolha de plano no onboarding só grava a preferência (`contas.plano_id`), sem cobrança real.
 
@@ -67,10 +67,11 @@ Skills instaladas em `.claude/skills/` — carregadas automaticamente quando a t
 | Policies de acesso ao banco | `supabase-rls` |
 
 ## Comandos do projeto
-- `npm run dev` — ambiente local
-- `npm run build` — build de produção
-- `npm run lint` — lint
-- Não existe suíte de testes configurada ainda (`npm run test` não existe no `package.json`).
+- `pnpm dev` — ambiente local (no Claude: preview `imsure-dev` em `.claude/launch.json`)
+- `pnpm build` — build de produção
+- `pnpm lint` — lint
+- `pnpm install` — dependências
+- Não existe suíte de testes configurada ainda (não há script `test` no `package.json`).
 
 ## Convenções de commit
 Conventional Commits (`feat:`, `fix:`, `chore:`, ...) — commits anteriores no histórico não seguem esse padrão ainda (foram feitos antes dessa convenção ser adotada), mas é o padrão a seguir daqui pra frente.
@@ -82,10 +83,16 @@ Conventional Commits (`feat:`, `fix:`, `chore:`, ...) — commits anteriores no 
 - **Stripe**: integração de pagamento real é intenção futura, ver nota no Stack acima.
 - CPF/CNPJ só valida quantidade de dígitos (11 ou 14), não o dígito verificador de verdade — pendente, perguntado ao usuário, sem resposta ainda.
 - Filtro avançado de funis tinha um campo "cotação válida até" no design original que não foi implementado — não existe campo correspondente no schema.
-- **Turbopack (dev) trava com "Jest worker encountered N child process exceptions"** depois de muitas mudanças de estrutura de pasta (criar/mover/apagar arquivos em lote) — não é bug de código (o `next build` de produção sempre compilou limpo nessas ocasiões). Resolve com `rm -rf .next` + reiniciar o `npm run dev`.
+- **Turbopack (dev) trava com "Jest worker encountered N child process exceptions"** depois de muitas mudanças de estrutura de pasta (criar/mover/apagar arquivos em lote) — não é bug de código (o `next build` de produção sempre compilou limpo nessas ocasiões). Resolve com `rm -rf .next` + reiniciar o `pnpm dev`.
+- **Projeto Supabase pausa sozinho** (plano gratuito) depois de ~7 dias sem uso — sintoma: app não carrega nenhuma página. Reativar pelo dashboard ou pela integração do Supabase (`restore_project`).
+- `middleware.ts` da raiz: o Next 16 avisa que a convenção foi renomeada pra `proxy.ts` — só warning por enquanto.
 - Ainda não existem: `usuario_corretora` (convite de equipe), `cargos`, domínio de seguros de verdade além de `negocios`/`contatos` (apólices, endossos, sinistros), enforcement de limites de plano na aplicação.
 
 ## Como o usuário gosta de trabalhar (importante)
-O usuário (Mitz) está aprendendo a programar e prefere método socrático: **não quer código pronto entregue de primeira** para conceitos que ele está aprendendo — prefere pseudocódigo/Portugol, perguntas guiadas, e tentar escrever ele mesmo antes de eu revisar. Boilerplate repetitivo e configuração de infraestrutura (bibliotecas, banco, etc.) podem ser feitos diretamente quando ele pedir explicitamente ("implementa pra mim").
+**Neste projeto, o Claude desenvolve o código e o usuário (Mitz) foca no produto.** Nada de método socrático, pseudocódigo ou "tenta escrever primeiro": implemente direto (features, correções, schema, infra), verifique que funciona e reporte o que foi feito. O papel do Mitz é decidir o quê e o porquê — requisitos, regras de negócio, prioridades, UX.
 
-Perfil: forte em lógica de programação e modelagem de banco relacional (vem do Bubble), ainda desenvolvendo sintaxe de JS/TS/Python/React/Next.js e ferramentas (Docker, deploy).
+- Em dúvidas de produto/regra de negócio que mudam o resultado, pergunte antes; em decisões técnicas, escolha a melhor opção e explique em uma linha.
+- Ao reportar, fale em termos de produto (o que o usuário final vê/consegue fazer agora), com detalhes técnicos só quando relevantes.
+- Perguntas abertas de arquitetura/produto ("me dá sua opinião") pedem recomendação clara + trade-off, não lista de opções.
+
+Perfil: forte em lógica de programação e modelagem de banco relacional (vem do Bubble).
