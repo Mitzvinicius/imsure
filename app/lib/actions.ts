@@ -1,7 +1,9 @@
 'use server'
 
-import { cookies } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
+import { indiceEtapaRenovacao } from "@/app/lib/seguros/renovacao";
+import { hojeSaoPaulo } from "@/app/lib/seguros/datas";
+import { indiceEtapaEmissao, LABEL_STATUS_NEGOCIO, type StatusNegocio } from "@/app/lib/seguros/etapas";
 
 function mensagemErroContato(error: { code?: string; message: string }) {
     if (error.code === "23505") {
@@ -134,9 +136,17 @@ export async function salvarFluxoVendas({
         }
     }
 
+    const indiceRenovacao = indiceEtapaRenovacao(etapas);
+    const indiceEmissao = indiceEtapaEmissao(etapas);
     const { error: erroEtapas } = await supabase
         .from("etapas")
-        .insert(etapas.map((nome, index) => ({ fluxo_id: fluxoId, nome, ordem: index })));
+        .insert(etapas.map((nome, index) => ({
+            fluxo_id: fluxoId,
+            nome,
+            ordem: index,
+            renovacao: index === indiceRenovacao,
+            emissao: index === indiceEmissao,
+        })));
 
     if (erroEtapas) {
         return { error: erroEtapas.message };
@@ -715,4 +725,49 @@ export async function deletarAnexo({ anexoId }: { anexoId: string }) {
         return { error: erroDelete.message };
     }
     return { error: null };
+}
+
+async function alterarStatusNegocio(
+    negocioId: string,
+    novo: { status: StatusNegocio; motivo_perda: string | null; observacao_perda: string | null; fechado_em?: string | null },
+) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: "Usuario não encontrado" };
+
+    const { data: atual } = await supabase.from("negocios").select("status").eq("id", negocioId).maybeSingle();
+    if (!atual) return { error: "Negócio não encontrado" };
+
+    const { error } = await supabase.from("negocios").update(novo).eq("id", negocioId);
+    if (error) return { error: error.message };
+
+    if (atual.status !== novo.status) {
+        const usuarioNome = (user.user_metadata?.nome as string | undefined) ?? user.email ?? "Você";
+        await supabase.from("negocio_historico").insert({
+            negocio_id: negocioId,
+            usuario_id: user.id,
+            usuario_nome: usuarioNome,
+            campo: "Status",
+            valor_anterior: LABEL_STATUS_NEGOCIO[atual.status as StatusNegocio],
+            valor_novo: novo.status === "perdido" && novo.motivo_perda ? `${LABEL_STATUS_NEGOCIO.perdido} (${novo.motivo_perda})` : LABEL_STATUS_NEGOCIO[novo.status],
+        });
+    }
+    return { error: null };
+}
+
+export async function marcarNegocioPerdido({
+    negocioId,
+    motivo,
+    observacao,
+}: {
+    negocioId: string;
+    motivo: string;
+    observacao: string | null;
+}) {
+    if (!motivo) return { error: "Informe o motivo da perda" };
+    return alterarStatusNegocio(negocioId, { status: "perdido", motivo_perda: motivo, observacao_perda: observacao || null, fechado_em: hojeSaoPaulo() });
+}
+
+export async function reabrirNegocio({ negocioId }: { negocioId: string }) {
+    return alterarStatusNegocio(negocioId, { status: "aberto", motivo_perda: null, observacao_perda: null, fechado_em: null });
 }

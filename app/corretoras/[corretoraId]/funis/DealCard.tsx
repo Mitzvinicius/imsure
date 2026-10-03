@@ -58,6 +58,8 @@ export default function DealCard({
                 <Chip size="small" label={negocio.tipo} variant="outlined" sx={{ fontSize: 11 }} />
                 <Chip size="small" label={negocio.ramo} sx={{ fontSize: 11, bgcolor: "action.hover" }} />
                 {negocio.indicacao && <Chip size="small" color="secondary" label="Indicação" sx={{ fontSize: 11 }} />}
+                {negocio.status === "ganho" && <Chip size="small" color="success" label="Ganho" sx={{ fontSize: 11 }} />}
+                {negocio.status === "perdido" && <Chip size="small" color="error" label="Perdido" sx={{ fontSize: 11 }} />}
             </Stack>
             <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", mt: 1.25, pt: 1, borderTop: "1px solid", borderColor: "divider" }}>
                 <Stack direction="row" spacing={0.75} sx={{ alignItems: "center", minWidth: 0 }}>

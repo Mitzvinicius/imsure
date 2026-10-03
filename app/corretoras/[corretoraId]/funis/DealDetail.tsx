@@ -1,5 +1,7 @@
 'use client';
+import { CampoMoeda } from "@/app/ui/design/CamposMascarados";
 import { useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 import Box from "@mui/material/Box";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
@@ -15,9 +17,16 @@ import Paper from "@mui/material/Paper";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import SaveIcon from "@mui/icons-material/Save";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutlined";
-import { atualizarNegocio, atualizarContato, deletarNegocio } from "@/app/lib/actions";
+import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
+import { atualizarNegocio, atualizarContato, deletarNegocio, marcarNegocioPerdido, reabrirNegocio } from "@/app/lib/actions";
+import { MOTIVOS_PERDA } from "@/app/lib/seguros/etapas";
+import Dialog from "@mui/material/Dialog";
+import DialogTitle from "@mui/material/DialogTitle";
+import DialogContent from "@mui/material/DialogContent";
+import DialogActions from "@mui/material/DialogActions";
+import Alert from "@mui/material/Alert";
 import { Etapa, Negocio } from "./types";
-import { TIPOS, SEGURADORAS, ORIGENS, GRUPOS_PRODUCAO, formatBRL } from "./constants";
+import { TIPOS, SEGURADORAS, ORIGENS, GRUPOS_PRODUCAO } from "./constants";
 import { initials, avatarColor } from "@/app/ui/design/avatar";
 import { corEtapa } from "./KanbanView";
 import ProfissaoEditor from "./ProfissaoEditor";
@@ -46,6 +55,27 @@ export default function DealDetail({
     onSaved: () => void;
     onDeleted: () => void;
 }) {
+    const router = useRouter();
+    const { corretoraId } = useParams<{ corretoraId: string }>();
+    const [perdaAberta, setPerdaAberta] = useState(false);
+    const [motivoPerda, setMotivoPerda] = useState("");
+    const [observacaoPerda, setObservacaoPerda] = useState("");
+    const [erroStatus, setErroStatus] = useState<string | null>(null);
+
+    async function confirmarPerda() {
+        setErroStatus(null);
+        const r = await marcarNegocioPerdido({ negocioId: negocio.id, motivo: motivoPerda, observacao: observacaoPerda || null });
+        if (r.error) { setErroStatus(r.error); return; }
+        setPerdaAberta(false);
+        onSaved();
+    }
+
+    async function reabrir() {
+        setErroStatus(null);
+        const r = await reabrirNegocio({ negocioId: negocio.id });
+        if (r.error) setErroStatus(r.error); else onSaved();
+    }
+
     const [nome, setNome] = useState(negocio.contato.nome);
     const [email, setEmail] = useState(negocio.contato.email ?? "");
     const [emailTocado, setEmailTocado] = useState(false);
@@ -60,7 +90,7 @@ export default function DealDetail({
     const [seguradora, setSeguradora] = useState(negocio.seguradora ?? "");
     const [origem, setOrigem] = useState(negocio.origem ?? "");
     const [grupoProducao, setGrupoProducao] = useState(negocio.grupo_producao ?? "");
-    const [valor, setValor] = useState(negocio.valor != null ? String(negocio.valor).replace(".", ",") : "");
+    const [valor, setValor] = useState<number | null>(negocio.valor);
     const [fechadoEm, setFechadoEm] = useState(dataParaInput(negocio.fechado_em));
     const [indicacao, setIndicacao] = useState(negocio.indicacao);
 
@@ -71,11 +101,6 @@ export default function DealDetail({
     const cor = corEtapa(etapaIndex < 0 ? 0 : etapaIndex);
     const etapaNome = etapas.find((e) => e.id === etapaId)?.nome ?? "—";
 
-    function parseValor(s: string) {
-        if (!s.trim()) return null;
-        const n = parseFloat(s.replace(/[^\d,]/g, "").replace(",", "."));
-        return isNaN(n) ? null : n;
-    }
 
     function onTelefoneChange(v: string) {
         setTelefone(formatTelefone(v));
@@ -114,7 +139,7 @@ export default function DealDetail({
                 seguradora: seguradora || null,
                 origem: origem || null,
                 grupoProducao: grupoProducao || null,
-                valor: parseValor(valor),
+                valor,
                 indicacao,
                 fechadoEm: fechadoEm || null,
             }),
@@ -143,6 +168,40 @@ export default function DealDetail({
                         <Typography noWrap sx={{ fontWeight: 800, fontSize: 15.5 }}>{nome || "Sem nome"}</Typography>
                         <Chip size="small" label={etapaNome} sx={{ bgcolor: `${cor}26`, color: cor, fontWeight: 700, height: 20, fontSize: 11 }} />
                     </Box>
+                </Stack>
+                <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+                    {negocio.status === "ganho" && <Chip color="success" label="Ganho" />}
+                    {negocio.status === "perdido" && (
+                        <Chip color="error" label={negocio.motivo_perda ? `Perdido · ${negocio.motivo_perda}` : "Perdido"} title={negocio.observacao_perda ?? undefined} />
+                    )}
+                    {negocio.status === "perdido" && <Button size="small" onClick={reabrir}>Reabrir</Button>}
+                    {negocio.status === "aberto" && (
+                        <Button size="small" color="error" onClick={() => setPerdaAberta(true)}>Marcar como perdido</Button>
+                    )}
+                    {negocio.apolice_renovada_id && (
+                        <Button size="small" onClick={() => router.push(`/corretoras/${corretoraId}/apolices/${negocio.apolice_renovada_id}`)}>
+                            Apólice a renovar
+                        </Button>
+                    )}
+                    {negocio.apolice_emitida_id ? (
+                        <Button
+                            variant="outlined"
+                            size="small"
+                            startIcon={<DescriptionOutlinedIcon />}
+                            onClick={() => router.push(`/corretoras/${corretoraId}/apolices/${negocio.apolice_emitida_id}`)}
+                        >
+                            Ver apólice
+                        </Button>
+                    ) : (
+                        <Button
+                            variant="contained"
+                            size="small"
+                            startIcon={<DescriptionOutlinedIcon />}
+                            onClick={() => router.push(`/corretoras/${corretoraId}/apolices/nova?negocioId=${negocio.id}`)}
+                        >
+                            Emitir apólice
+                        </Button>
+                    )}
                 </Stack>
             </Stack>
 
@@ -210,7 +269,7 @@ export default function DealDetail({
                                 <MenuItem value="">—</MenuItem>
                                 {SEGURADORAS.map((s) => <MenuItem key={s} value={s}>{s}</MenuItem>)}
                             </TextField>
-                            <TextField label="Prêmio bruto" value={valor} onChange={(e) => setValor(e.target.value)} placeholder={formatBRL(0)} />
+                            <CampoMoeda label="Prêmio bruto" valor={valor} onValor={setValor} />
                             <TextField label="Data de fechamento" type="date" value={fechadoEm} onChange={(e) => setFechadoEm(e.target.value)} slotProps={{ inputLabel: { shrink: true } }} />
                             <TextField label="Vendedor responsável" value={negocio.vendedor.nome} disabled />
                             <TextField select label="Origem do cliente" value={origem} onChange={(e) => setOrigem(e.target.value)}>
@@ -248,6 +307,22 @@ export default function DealDetail({
                     </Button>
                 </Stack>
             </Stack>
+            <Dialog open={perdaAberta} onClose={() => setPerdaAberta(false)} fullWidth maxWidth="xs">
+                <DialogTitle>Marcar negócio como perdido</DialogTitle>
+                <DialogContent>
+                    <Stack spacing={2} sx={{ mt: 1 }}>
+                        <TextField select label="Motivo" required value={motivoPerda} onChange={(e) => setMotivoPerda(e.target.value)}>
+                            {MOTIVOS_PERDA.map((m) => <MenuItem key={m} value={m}>{m}</MenuItem>)}
+                        </TextField>
+                        <TextField label="Observação" multiline minRows={2} value={observacaoPerda} onChange={(e) => setObservacaoPerda(e.target.value)} />
+                        {erroStatus && <Alert severity="error">{erroStatus}</Alert>}
+                    </Stack>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setPerdaAberta(false)}>Cancelar</Button>
+                    <Button variant="contained" color="error" disabled={!motivoPerda} onClick={confirmarPerda}>Marcar como perdido</Button>
+                </DialogActions>
+            </Dialog>
         </Box>
     );
 }

@@ -28,4 +28,6 @@ Tabelas: `planos`, `contas`, `corretoras`, `usuarios`, `fluxos`, `etapas`, `cont
 
 ## Como o usuário gosta de trabalhar
 
-Iniciante em programação, vem do Bubble (forte em lógica/modelagem relacional, aprendendo sintaxe). Prefere método socrático pra conceitos novos — pseudocódigo/Portugol, perguntas guiadas, deixa ele tentar primeiro. Pra boilerplate/infra (bibliotecas, configuração, schema de banco) ele geralmente pede implementação direta. Fica à vontade fazendo perguntas de arquitetura/produto abertas ("me dá sua opinião", "faça mais perguntas se precisar") — vale responder com recomendação clara + trade-off, não só listar opções.
+> Atualizado (out/2026): o método socrático foi abandonado neste projeto — o Claude desenvolve o código e o usuário foca no produto. Ver `CLAUDE.md`.
+
+Vem do Bubble (forte em lógica/modelagem relacional). Fica à vontade fazendo perguntas de arquitetura/produto abertas ("me dá sua opinião", "faça mais perguntas se precisar") — vale responder com recomendação clara + trade-off, não só listar opções.

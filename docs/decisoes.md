@@ -121,6 +121,38 @@ Criar um negócio sempre atribui `vendedor_usuario_id = auth.uid()` — não exi
 
 **Pendente**: validação do dígito verificador real de CPF/CNPJ (hoje só confere se tem 11 ou 14 dígitos) — perguntado ao usuário, sem resposta ainda.
 
+## Base de seguros (etapa 1 do portal do cliente)
+
+Spec completo: [`superpowers/specs/2026-10-02-base-seguros-design.md`](superpowers/specs/2026-10-02-base-seguros-design.md). O objetivo maior é um portal onde o segurado vê apólices/sinistros em todas as corretoras onde está cadastrado; esta etapa cria os dados que o portal vai mostrar.
+
+- **Cadastro manual agora, PDF depois**: o formulário é o mesmo que a extração de PDF vai preencher.
+- **Bem segurado com uma tabela por ramo** (auto, residencial, RC, vida + beneficiários) e descrição livre para os demais: validação no banco, busca por placa/chassi, mesmo padrão de RLS do resto.
+- **Apólice não é "endosso 0"**: parcela pertence à apólice e opcionalmente a um endosso — o extrato de comissão não traz número de endosso para parcelas originais, então um "endosso 0" geraria falsos desencontros na baixa (decisão do Mitz).
+- **Status da parcela virá da baixa de comissão** (etapa 1b); baixa manual existe como alternativa, e baixa vinda de extrato não pode ser desfeita à mão.
+- **Seguradoras numa lista global** mantida pelo imsure: telefones de assistência prontos para o portal e identificação consistente para cruzar extratos.
+- **Franquia por cobertura**, não por apólice.
+- **Sinistro com status por ramo** (auto tem vistoria/oficina) e **histórico de andamentos** para todos — é o "rastreio" que o cliente vai ver.
+- **Renovação automática** cria negócio X dias antes do fim da vigência (X por corretora), na etapa marcada como de renovação (`etapas.renovacao`, não pelo nome — renomear não quebra). Índice único em `negocios.apolice_renovada_id` impede duplicar.
+- **Status da apólice é calculado em TS**, não guardado: só o cancelamento é manual.
+
+## Status do negócio e máscaras (pedidos do Mitz após testar a etapa 1)
+
+- **Ganho é automático, perdido é manual**: emitir apólice marca o negócio como Ganho e o move para a etapa marcada como "de emissão" (`etapas.emissao`, mesmo esquema da renovação — por marcação, não por nome). Perdido exige motivo de uma lista fixa (`MOTIVOS_PERDA`) + observação opcional; "Arquivado" continua sendo só uma etapa. O funil padrão do onboarding ganhou "Seguro emitido".
+- **Máscara de dinheiro "da direita para a esquerda"** (como app de banco): digitar 123456 vira R$ 1.234,56. Evita de vez o bug de vírgula/centavos. Percentual igual, limitado a 100%.
+
+## Ficha do contato e vínculos familiares
+
+- **Todo parente é um contato da corretora** (vincular existente ou cadastrar novo com nome + telefone ou e-mail): o parente pode ter as próprias apólices e virar oportunidade de venda.
+- **Vínculo automático nos dois lados** (decisão do Mitz): grava-se uma linha só e o outro contato vê o grau inverso (filho ↔ pai/mãe, avô ↔ neto, sogro ↔ genro/nora, enteado ↔ padrasto/madrasta; cônjuge, irmão e cunhado são simétricos). Graus neutros em gênero ("Pai/Mãe") para não precisar de gênero do contato.
+- **Pessoa jurídica** mostra só as informações principais; estado civil, financeiro e família são de pessoa física (a action limpa esses campos se o contato virar PJ).
+- **Patrimônio imobilizado** = imóveis, veículos e outros bens; **financeiro** = investimentos e aplicações.
+
+## Ficha do contato em abas, patrimônio e saúde
+
+- **Patrimônio imobilizado virou lista de bens** (imóvel, veículo, outro) com valor estimado; o total é a soma. Cada bem mostra se está **Segurado**, com **Seguro vencido** ou **Sem seguro** — oportunidade de venda visível na ficha.
+- **Vínculo bem ↔ apólice é manual** (decisão do Mitz), muitos-para-muitos (renovações e frotas), só ramos automóvel, residencial e empresarial. Ligar automaticamente pela placa/endereço ao cadastrar a apólice ficou para depois, se fizer sentido.
+- **Saúde em tabela própria** (`contato_saude`): é dado sensível pela LGPD e, quando houver equipe, vai ser preciso restringir quem vê. IMC calculado no código (faixas da OMS), não guardado.
+
 ## Pendências técnicas conhecidas
 
 1. **`contas` sem policy de `UPDATE`** — `selecionarPlano` está quebrado (RLS bloqueia a troca de plano, silenciosamente, sem erro visível). Precisa de uma policy tipo:

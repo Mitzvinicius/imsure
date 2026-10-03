@@ -6,13 +6,13 @@
 CRM/ERP para corretoras de seguros, multi-tenant (uma conta pode ter múltiplas corretoras/filiais).
 
 - Branch atual: `sandbox-dashboard` (remote `origin` = https://github.com/Mitzvinicius/imsure)
-- Gerenciador de pacotes: `npm`
+- Gerenciador de pacotes: `pnpm` (migrado do npm pelo Carlos — `pnpm-lock.yaml` é o lockfile; o pnpm não está instalado globalmente na máquina do Mitz, então os comandos rodam via `npx -y pnpm@10 ...`)
 - Projeto Supabase: `imsure` (ref `bmovnppkcvpjeieyugdz`)
 - Existe um projeto irmão do tutorial "Next.js Learn Dashboard" puro em `nextjs-dashboard` (outra pasta, no OneDrive) — só referência de padrões, não é o mesmo repositório.
 
 ## Stack
 - Next.js (App Router) + TypeScript
-- Supabase (Postgres + RLS + Auth)
+- Supabase (Postgres + RLS + Auth) — clientes em `utils/supabase/`: `server.ts` (Server Components/Actions; `createClient()` sem argumentos, lê os cookies sozinho), `client.ts` (browser), `middleware.ts` (renova a sessão, usado pelo `middleware.ts` da raiz). Variáveis em `.env.local`: `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
 - Material UI (MUI) — usado em todo o projeto, ícones e componentes
 - **Planejado, ainda não integrado**: Stripe (pagamentos/assinaturas). Hoje a escolha de plano no onboarding só grava a preferência (`contas.plano_id`), sem cobrança real.
 
@@ -27,25 +27,39 @@ CRM/ERP para corretoras de seguros, multi-tenant (uma conta pode ter múltiplas 
 | `/onboarding/[corretoraId]` | `app/onboarding/[corretoraId]/OnboardingWizard.tsx` | Onboarding em 5 etapas, estilo Typeform (tela cheia, uma etapa por vez) |
 | `/corretoras/[corretoraId]/funis` | `app/corretoras/[corretoraId]/funis/FunisPage.tsx` | Kanban/Lista de negócios do funil ativo da corretora |
 | `/corretoras/[corretoraId]/contatos` | `app/corretoras/[corretoraId]/contatos/ContatosPage.tsx` | Lista de contatos da corretora (lê do banco de verdade) |
+| `/corretoras/[corretoraId]/contatos/[contatoId]` (`?aba=`) | `contatos/[contatoId]/ContatoDetail.tsx` + `_components/Aba*.tsx` | Ficha do contato em abas: Principais, Financeiro (renda, patrimônio financeiro e lista de bens vinculáveis a apólices de auto/residencial/empresarial), Família (parentes até 2º grau, vínculo invertido automático) e Saúde (peso, altura, IMC) |
+| `/corretoras/[corretoraId]/apolices` (+ `nova`, `[apoliceId]`, `[apoliceId]/editar`) | `apolices/ApolicesPage.tsx`, `_components/ApoliceForm.tsx`, `[apoliceId]/ApoliceDetail.tsx` | Carteira: lista com filtros, cadastro (bem segurado por ramo, coberturas, parcelas), detalhe com abas Parcelas/Endossos/Sinistros/Anexos |
+| `/corretoras/[corretoraId]/sinistros` (+ `novo`, `[sinistroId]`) | `sinistros/SinistrosPage.tsx`, `novo/NovoSinistroForm.tsx`, `[sinistroId]/SinistroDetail.tsx` | Sinistros com status por ramo e histórico de andamentos |
+| `/corretoras/[corretoraId]/configuracoes` | `configuracoes/ConfiguracoesPage.tsx` | Dias de antecedência e etapa do funil da renovação automática |
 
 `app/corretoras/[corretoraId]/layout.tsx` é o layout compartilhado dessas duas últimas rotas: faz a guarda de autenticação/posse da corretora e renderiza a `Sidebar` (seletor de conta + nav Funis/Contatos) em volta do conteúdo.
 
 `app/dashboard/page.tsx` e `app/ui/opportunities/table.tsx` são stubs/rascunho, provavelmente do colega trabalhando em paralelo na navegação/sidebar — status desconhecido, não mexer sem confirmar com ele.
 
 ## Server Actions
-- `app/lib/actions.ts` — `criarConta`, `atualizarDadosCorretora`, `salvarRamosAtuacao`, `salvarFluxoVendas`, `selecionarPlano`, `concluirOnboarding`, `definirFunilAtivo`, `buscarContatos`, `criarNegocio`, `moverNegocio`, `atualizarNegocio`, `atualizarContato`, `deletarNegocio`
+- `app/lib/actions.ts` — `criarConta`, `atualizarDadosCorretora`, `salvarRamosAtuacao`, `salvarFluxoVendas`, `selecionarPlano`, `concluirOnboarding`, `definirFunilAtivo`, `buscarContatos`, `criarNegocio`, `moverNegocio`, `atualizarNegocio`, `atualizarContato`, `deletarNegocio`, `marcarNegocioPerdido`, `reabrirNegocio`
+- `app/lib/actions-contatos.ts` — `atualizarFichaContato`, `adicionarVinculo`, `removerVinculo`, `salvarBemPatrimonio`, `removerBemPatrimonio`, `vincularBemApolice`, `desvincularBemApolice`, `salvarSaude`
+- `app/lib/actions-seguros.ts` — `criarApolice`, `atualizarApolice`, `cancelarApolice`, `adicionarParcelas`, `atualizarParcela`, `darBaixaManual`, `criarEndosso`, `listarAnexosApolice`, `uploadAnexoApolice`, `deletarAnexoApolice`, `criarSinistro`, `atualizarSinistro`, `registrarAndamento`, `atualizarConfiguracoesCorretora`
+- Regras puras (testadas com Vitest) em `app/lib/seguros/`: ramos, datas, parcelas, status, sinistros, renovação, validação, mensagens de erro, tipos.
 - `app/auth/actions.ts` — `signIn`, `createNewUser`
 - **Padrão**: toda action retorna `{ error: string | null }`. Nenhuma lança exceção nem chama `redirect()` internamente — quem navega em caso de sucesso é o componente cliente (`router.push`/`router.refresh`). Isso evita um bug real do Next.js: `redirect()` dentro de um `try/catch` no cliente pode ser "engolido" e nunca navegar.
 
 ## Banco de dados (Supabase)
 Hierarquia: `planos` → `contas` (dono = `owner_usuario_id`) → `corretoras` → `fluxos` → `etapas` → `negocios`. `corretoras` também tem `contatos` (pessoas cadastradas) — `negocios.contato_id` referencia `contatos`, `negocios.vendedor_usuario_id` referencia `usuarios`. `usuarios` espelha `auth.users` (criado via trigger `handle_new_user`).
 
-RLS ativo em tudo. Modelo de autorização: **dono da `conta` controla tudo abaixo na hierarquia** (verificado via subquery `contas.owner_usuario_id = auth.uid()` em cada tabela filha, subindo a cadeia de FKs). `usuario_corretora` (multi-usuário por corretora) ainda não existe — hoje só o dono acessa; `negocios.vendedor_usuario_id` já existe pensando nisso (ver `docs/decisoes.md`).
+Patrimônio: `contato_bens` (imóvel/veículo/outro) ↔ `contato_bem_apolices` (vínculo manual; FKs com `contato_id` garantem que a apólice é do mesmo cliente). Saúde: `contato_saude` (1:1, tabela separada por ser dado sensível — LGPD).
+
+Família: `contato_vinculos` (corretora_id, contato_id, parente_id, parentesco) grava o vínculo **uma vez** ("parente é X do contato"); o lado inverso é derivado em `app/lib/contatos/parentesco.ts` (`parentescoInverso`, `parentesDoContato`). Índice único no par (qualquer sentido) e FKs compostas `(id, corretora_id)` garantem mesma corretora.
+
+Seguros: `corretoras` → `apolices` (cliente = `contato_id`, `seguradora_id` → `seguradoras`, lista **global**) → `endossos`, `parcelas` (da apólice ou de um endosso — a apólice **não** é "endosso 0"), `coberturas`, `bens_auto`/`bens_residencial`/`bens_rc`/`vidas_seguradas` → `beneficiarios`, `sinistros` → `sinistro_andamentos`, `apolice_anexos` (bucket privado `apolice-anexos`). Negócio tem `status` (aberto/ganho/perdido, com `motivo_perda`/`observacao_perda`): emitir apólice marca ganho e move para a etapa `etapas.emissao` (escolhida em Configurações); perdido é manual com motivo. Renovação: `negocios.apolice_renovada_id`, `etapas.renovacao`, `corretoras.dias_antecedencia_renovacao`, função `criar_negocios_renovacao()` agendada diariamente via `pg_cron`. Migrações versionadas em `supabase/migrations/` (aplicadas pelo MCP do Supabase) e testes SQL em `supabase/tests/` (rodar com `execute_sql`; desfazem tudo com `rollback`).
+
+RLS ativo em tudo. Modelo de autorização: **dono da `conta` controla tudo abaixo na hierarquia** (verificado via subquery `contas.owner_usuario_id = auth.uid()` em cada tabela filha, subindo a cadeia de FKs). `usuario_corretora` (multi-usuário por corretora) ainda não existe — hoje só o dono acessa; `negocios.vendedor_usuario_id` já existe pensando nisso (ver `docs/decisoes.md`). Tabelas de seguros usam as funções helper `usuario_possui_corretora(id)`/`usuario_possui_apolice(id)` (security definer, executáveis só por `authenticated`).
 
 `contatos.cpf_cnpj` é um campo único (CPF **ou** CNPJ, detectado automaticamente pela quantidade de dígitos — vira `contatos.tipo_pessoa`), com constraint de unicidade por corretora.
 
 ## Design system
 - Tema MUI em `app/ui/design/theme.ts` (light/dark), aplicado via `app/ui/design/ThemeRegistry.tsx` no layout raiz — mapeia as mesmas cores que estavam em `app/globals.css` (que hoje só guarda os tokens de cor como referência/fonte de verdade pro tema, não estiliza nada diretamente).
+- Campos com máscara: `app/ui/design/CamposMascarados.tsx` (`CampoMoeda` — R$ preenchido da direita para a esquerda — e `CampoPercentual`), funções em `funis/masks.ts`.
 - Helpers compartilhados em `app/ui/design/`: `avatar.tsx` (iniciais/cor por nome), `icons.tsx` (só o logo do Google, que o MUI não tem — o resto dos ícones vem de `@mui/icons-material`).
 - Padrão de página: `page.tsx` (Server Component — busca dados, guarda de autenticação) + `NomeDaPagina.tsx` (Client Component — interatividade).
 
@@ -67,10 +81,11 @@ Skills instaladas em `.claude/skills/` — carregadas automaticamente quando a t
 | Policies de acesso ao banco | `supabase-rls` |
 
 ## Comandos do projeto
-- `npm run dev` — ambiente local
-- `npm run build` — build de produção
-- `npm run lint` — lint
-- Não existe suíte de testes configurada ainda (`npm run test` não existe no `package.json`).
+- `pnpm dev` — ambiente local (no Claude: preview `imsure-dev` em `.claude/launch.json`)
+- `pnpm build` — build de produção
+- `pnpm lint` — lint
+- `pnpm install` — dependências
+- `pnpm test` — Vitest (lógica pura em `app/lib/seguros/*.test.ts`)
 
 ## Convenções de commit
 Conventional Commits (`feat:`, `fix:`, `chore:`, ...) — commits anteriores no histórico não seguem esse padrão ainda (foram feitos antes dessa convenção ser adotada), mas é o padrão a seguir daqui pra frente.
@@ -82,10 +97,18 @@ Conventional Commits (`feat:`, `fix:`, `chore:`, ...) — commits anteriores no 
 - **Stripe**: integração de pagamento real é intenção futura, ver nota no Stack acima.
 - CPF/CNPJ só valida quantidade de dígitos (11 ou 14), não o dígito verificador de verdade — pendente, perguntado ao usuário, sem resposta ainda.
 - Filtro avançado de funis tinha um campo "cotação válida até" no design original que não foi implementado — não existe campo correspondente no schema.
-- **Turbopack (dev) trava com "Jest worker encountered N child process exceptions"** depois de muitas mudanças de estrutura de pasta (criar/mover/apagar arquivos em lote) — não é bug de código (o `next build` de produção sempre compilou limpo nessas ocasiões). Resolve com `rm -rf .next` + reiniciar o `npm run dev`.
-- Ainda não existem: `usuario_corretora` (convite de equipe), `cargos`, domínio de seguros de verdade além de `negocios`/`contatos` (apólices, endossos, sinistros), enforcement de limites de plano na aplicação.
+- **Turbopack (dev) trava com "Jest worker encountered N child process exceptions"** depois de muitas mudanças de estrutura de pasta (criar/mover/apagar arquivos em lote) — não é bug de código (o `next build` de produção sempre compilou limpo nessas ocasiões). Resolve com `rm -rf .next` + reiniciar o `pnpm dev`.
+- **Projeto Supabase pausa sozinho** (plano gratuito) depois de ~7 dias sem uso — sintoma: app não carrega nenhuma página. Reativar pelo dashboard ou pela integração do Supabase (`restore_project`).
+- `middleware.ts` da raiz: o Next 16 avisa que a convenção foi renomeada pra `proxy.ts` — só warning por enquanto.
+- **Seguradoras**: lista inicial sem telefones de assistência/sinistro nem código SUSEP — preencher com fonte oficial.
+- **Roadmap do portal do cliente** (ver `docs/superpowers/specs/2026-10-02-base-seguros-design.md`): etapa 1 (base de seguros) feita; faltam 1b baixa de comissão, 2 portal + PWA, 3 ações do cliente (aviso de sinistro/assistência), 4 comunicação (lembretes, renovação, promoções).
+- Ainda não existem: `usuario_corretora` (convite de equipe), `cargos`, enforcement de limites de plano na aplicação.
 
 ## Como o usuário gosta de trabalhar (importante)
-O usuário (Mitz) está aprendendo a programar e prefere método socrático: **não quer código pronto entregue de primeira** para conceitos que ele está aprendendo — prefere pseudocódigo/Portugol, perguntas guiadas, e tentar escrever ele mesmo antes de eu revisar. Boilerplate repetitivo e configuração de infraestrutura (bibliotecas, banco, etc.) podem ser feitos diretamente quando ele pedir explicitamente ("implementa pra mim").
+**Neste projeto, o Claude desenvolve o código e o usuário (Mitz) foca no produto.** Nada de método socrático, pseudocódigo ou "tenta escrever primeiro": implemente direto (features, correções, schema, infra), verifique que funciona e reporte o que foi feito. O papel do Mitz é decidir o quê e o porquê — requisitos, regras de negócio, prioridades, UX.
 
-Perfil: forte em lógica de programação e modelagem de banco relacional (vem do Bubble), ainda desenvolvendo sintaxe de JS/TS/Python/React/Next.js e ferramentas (Docker, deploy).
+- Em dúvidas de produto/regra de negócio que mudam o resultado, pergunte antes; em decisões técnicas, escolha a melhor opção e explique em uma linha.
+- Ao reportar, fale em termos de produto (o que o usuário final vê/consegue fazer agora), com detalhes técnicos só quando relevantes.
+- Perguntas abertas de arquitetura/produto ("me dá sua opinião") pedem recomendação clara + trade-off, não lista de opções.
+
+Perfil: forte em lógica de programação e modelagem de banco relacional (vem do Bubble).

@@ -1,4 +1,5 @@
 'use client';
+import { CampoMoeda } from "@/app/ui/design/CamposMascarados";
 import { useMemo, useRef, useState } from "react";
 import Dialog from "@mui/material/Dialog";
 import DialogTitle from "@mui/material/DialogTitle";
@@ -55,7 +56,7 @@ export default function NewDealModal({
     const [tipo, setTipo] = useState("");
     const [etapaId, setEtapaId] = useState(etapas[0]?.id ?? "");
     const [ramo, setRamo] = useState("");
-    const [valor, setValor] = useState("");
+    const [valor, setValor] = useState<number | null>(null);
     const [indicacao, setIndicacao] = useState(false);
     const [erros, setErros] = useState<Record<string, string>>({});
     const [salvando, setSalvando] = useState(false);
@@ -112,7 +113,7 @@ export default function NewDealModal({
         setTipo("");
         setEtapaId(etapas[0]?.id ?? "");
         setRamo("");
-        setValor("");
+        setValor(null);
         setIndicacao(false);
         setErros({});
     }
@@ -127,11 +128,6 @@ export default function NewDealModal({
         setNovoTipoPessoa(t);
     }
 
-    function parseValor(s: string) {
-        if (!s.trim()) return null;
-        const n = parseFloat(s.replace(/[^\d,]/g, "").replace(",", "."));
-        return isNaN(n) ? null : n;
-    }
 
     const emailInvalido = emailTocado && novoEmail.trim().length > 0 && !validarEmail(novoEmail.trim());
     const cpfCnpjIncompleto = novoCpfCnpj.trim().length > 0 && !cpfCnpjCompleto(novoCpfCnpj);
@@ -175,7 +171,7 @@ export default function NewDealModal({
                 : null,
             tipo,
             ramo,
-            valor: parseValor(valor),
+            valor,
             indicacao,
         });
         setSalvando(false);
@@ -283,7 +279,7 @@ export default function NewDealModal({
                         <TextField select label="Ramo" value={ramo} onChange={(e) => setRamo(e.target.value)} error={!!erros.ramo} helperText={erros.ramo}>
                             {ramoOpcoes.map((r) => <MenuItem key={r} value={r}>{r}</MenuItem>)}
                         </TextField>
-                        <TextField label="Valor potencial (opcional)" placeholder="Ex: 1.500,00" value={valor} onChange={(e) => setValor(e.target.value)} />
+                        <CampoMoeda label="Valor potencial (opcional)" valor={valor} onValor={setValor} />
                         <FormControlLabel control={<Switch checked={indicacao} onChange={(e) => setIndicacao(e.target.checked)} />} label="Cliente é indicação" />
                     </Stack>
                 </Box>

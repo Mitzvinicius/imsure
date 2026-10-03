@@ -1,4 +1,6 @@
+import { cookies } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
+import { lerFiltrosSalvos, nomeCookieFiltros } from "./filtros";
 import FunisPage from "./FunisPage";
 import type { Etapa, Fluxo, Negocio } from "./types";
 
@@ -9,6 +11,8 @@ export default async function Page({
 }) {
     const { corretoraId } = await params;
     const supabase = await createClient();
+    const cookieFiltros = (await cookies()).get(nomeCookieFiltros(corretoraId))?.value;
+    const filtrosIniciais = lerFiltrosSalvos(cookieFiltros?.startsWith("%") ? decodeURIComponent(cookieFiltros) : cookieFiltros);
 
     const { data: { user } } = await supabase.auth.getUser();
     const nomeUsuario = (user?.user_metadata?.nome as string | undefined) ?? user?.email ?? "Você";
@@ -43,10 +47,14 @@ export default async function Page({
         if (etapaIds.length) {
             const { data: negociosData } = await supabase
                 .from("negocios")
-                .select("id, etapa_id, tipo, ramo, seguradora, origem, grupo_producao, valor, indicacao, criado_em, fechado_em, contato:contatos(id, nome, telefone, email, cpf_cnpj, tipo_pessoa, profissoes), vendedor:usuarios(id, nome)")
+                .select("id, etapa_id, tipo, ramo, seguradora, origem, grupo_producao, valor, indicacao, criado_em, fechado_em, apolice_renovada_id, status, motivo_perda, observacao_perda, contato:contatos(id, nome, telefone, email, cpf_cnpj, tipo_pessoa, profissoes), vendedor:usuarios(id, nome), apolice_emitida:apolices!apolices_negocio_origem_id_fkey(id)")
                 .in("etapa_id", etapaIds)
                 .order("criado_em", { ascending: false });
-            negocios = (negociosData ?? []) as unknown as Negocio[];
+            type Bruto = Omit<Negocio, "apolice_emitida_id"> & { apolice_emitida: { id: string } | { id: string }[] | null };
+            negocios = ((negociosData ?? []) as unknown as Bruto[]).map(({ apolice_emitida, ...n }) => ({
+                ...n,
+                apolice_emitida_id: Array.isArray(apolice_emitida) ? (apolice_emitida[0]?.id ?? null) : (apolice_emitida?.id ?? null),
+            }));
         }
     }
 
@@ -59,6 +67,7 @@ export default async function Page({
             fluxosIniciais={fluxos}
             etapasIniciais={etapas}
             negociosIniciais={negocios}
+            filtrosIniciais={filtrosIniciais}
         />
     );
 }

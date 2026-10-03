@@ -51,3 +51,59 @@ export function cpfCnpjCompleto(input: string): boolean {
 export function validarEmail(email: string): boolean {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
+
+export function formatCpf(input: string): string {
+    return formatCpfCnpj(apenasDigitos(input).slice(0, 11)).formatted;
+}
+
+function agruparMilhar(inteiro: string): string {
+    return inteiro.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+}
+
+function centavosParaTexto(centavos: number): string {
+    const negativo = centavos < 0;
+    const abs = Math.abs(centavos);
+    const inteiro = agruparMilhar(String(Math.floor(abs / 100)));
+    const decimais = String(abs % 100).padStart(2, "0");
+    return `${negativo ? "-" : ""}${inteiro},${decimais}`;
+}
+
+// Máscara de digitação "da direita para a esquerda": cada dígito digitado entra nos centavos.
+export function mascaraMoeda(texto: string, permitirNegativo = false): { texto: string; valor: number | null } {
+    const digitos = apenasDigitos(texto).replace(/^0+/, "").slice(0, 12);
+    const centavos = Number(digitos || "0");
+    if (centavos === 0) return { texto: "", valor: null };
+    const sinal = permitirNegativo && texto.includes("-") ? -1 : 1;
+    return { texto: centavosParaTexto(sinal * centavos), valor: (sinal * centavos) / 100 };
+}
+
+export function formatMoeda(valor: number | null): string {
+    if (valor == null) return "";
+    return centavosParaTexto(Math.round(valor * 100));
+}
+
+export function mascaraPercentual(texto: string): { texto: string; valor: number | null } {
+    const digitos = apenasDigitos(texto).replace(/^0+/, "").slice(0, 5);
+    const centesimos = Math.min(Number(digitos || "0"), 10000);
+    if (centesimos === 0) return { texto: "", valor: null };
+    return { texto: centavosParaTexto(centesimos), valor: centesimos / 100 };
+}
+
+export function formatPercentual(valor: number | null): string {
+    if (valor == null) return "";
+    return centavosParaTexto(Math.round(valor * 100));
+}
+
+// Decimal genérico "da direita para a esquerda" (peso, altura...): `casas` decimais, até `maxDigitos` dígitos.
+export function mascaraDecimal(texto: string, casas: number, maxDigitos: number): { texto: string; valor: number | null } {
+    const digitos = apenasDigitos(texto).replace(/^0+/, "").slice(0, maxDigitos);
+    const n = Number(digitos || "0");
+    if (n === 0) return { texto: "", valor: null };
+    const valor = n / 10 ** casas;
+    return { texto: formatDecimal(valor, casas), valor };
+}
+
+export function formatDecimal(valor: number | null, casas: number): string {
+    if (valor == null) return "";
+    return valor.toFixed(casas).replace(".", ",");
+}

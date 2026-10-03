@@ -22,6 +22,11 @@ export type Negocio = {
     indicacao: boolean;
     criado_em: string;
     fechado_em: string | null;
+    apolice_renovada_id: string | null;
+    apolice_emitida_id: string | null;
+    status: "aberto" | "ganho" | "perdido";
+    motivo_perda: string | null;
+    observacao_perda: string | null;
     contato: {
         id: string;
         nome: string;

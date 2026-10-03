@@ -3,7 +3,9 @@
   "configurations": [
     {
       "name": "imsure-dev",
-      "url": "http://localhost:3000"
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["-y", "pnpm@10", "dev"],
+      "port": 3000
     }
   ]
 }
