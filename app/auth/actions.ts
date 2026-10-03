@@ -1,16 +1,17 @@
 'use server'
 
-import { cookies } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
 
 export async function createNewUser({
     nome,
     email,
     password,
+    next,
 }: {
     nome: string;
     email: string;
     password: string;
+    next?: string;
 }) {
     const supabase = await createClient();
 
@@ -19,7 +20,7 @@ export async function createNewUser({
         password,
         options: {
             data: { nome },
-            emailRedirectTo: `${process.env.NEXT_PUBLIC_HOST}/auth/callback`,
+            emailRedirectTo: `${process.env.NEXT_PUBLIC_HOST}/auth/callback${next ? `?next=${encodeURIComponent(next)}` : ""}`,
         },
     });
 
