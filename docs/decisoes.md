@@ -172,6 +172,21 @@ Depois do teste com a segunda conta, o Mitz pediu que **todos vejam todos os con
 - Financeiro, patrimônio, família e saúde continuam só para a carteira. Renda e patrimônio financeiro saíram de `contatos` para `contato_financeiro`, porque RLS não esconde colunas por linha.
 - Ao criar negócio/apólice com o contato, ele entra na carteira do produtor e a ficha completa libera.
 
+## Tarefas, conversa e notificações (parte B da equipe)
+
+O Mitz pediu "um controle de tarefas/emissão/sinistros tipo um Slack". A decisão foi **tarefas ligadas aos registros** (negócio, apólice, sinistro, contato, ou avulsas) com **conversa e @menções dentro de cada registro**, em vez de canais soltos: o combinado fica onde importa, canais concorreriam com o WhatsApp e o funil já é um quadro.
+- **Notificações só dentro do imsure** por enquanto (sino em tempo real + página Tarefas). Cada notificação é um registro no banco, então e-mail/WhatsApp viram só mais um canal depois.
+- **Anotações do negócio viraram comentários** (autor e data preservados): dois conceitos iguais confundiriam. `negocio_anotacoes` ficou obsoleta e sai numa migração futura.
+- **Responsável e @menção só para quem enxerga o registro**: ninguém é chamado para algo que não consegue abrir. O banco recusa; a tela nem sugere.
+- **Lembretes diários às 7h de São Paulo** via `pg_cron` (`0 10 * * *` UTC — Brasil sem horário de verão desde 2019), uma notificação por tarefa por dia.
+
+Decisões técnicas:
+- As funções de visibilidade da parte A ganharam variantes "para um usuário qualquer" (`escopo_de`, `ve_responsavel_de`, `ve_negocio_de`, `possui_apolice_de`, `ve_sinistro_de`, `ve_contato_de`, `usuario_alvo_ve_registro`) e as originais viraram wrappers com `auth.uid()`: **uma única fonte de verdade** para RLS e para validar responsável/menção. As variantes `*_de` **não são chamáveis via API** (permitiriam sondar o que outra pessoa enxerga); as policies usam wrappers (`usuario_ve_alvo`, `usuario_ve_registro`, `usuario_ve_tarefa_linha`, `pode_mencionar`).
+- A policy de leitura de `tarefas` recebe as colunas da linha, não o id: buscar a linha por id dentro da função falharia no `insert ... returning` (a linha nova ainda não é visível ali).
+- Comentário + menções numa RPC só (`comentar`): menção recusada não deixa comentário órfão.
+- Notificações só entram por triggers `security definer`; o usuário só altera `lida_em` (grant por coluna). Dedupe por `chave`: quem é mencionado num comentário de tarefa recebe uma notificação só (a de menção prevalece sobre "comentou na tarefa").
+- Editar comentário não renotifica menções (a menção vale no envio).
+
 ## Pendências técnicas conhecidas
 
 1. **`contas` sem policy de `UPDATE`** — `selecionarPlano` está quebrado (RLS bloqueia a troca de plano, silenciosamente, sem erro visível). Precisa de uma policy tipo:
