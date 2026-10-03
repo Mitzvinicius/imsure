@@ -23,6 +23,7 @@ import { formatBRL } from "../../funis/constants";
 import ParcelasTab from "../_components/ParcelasTab";
 import EndossosTab from "../_components/EndossosTab";
 import AnexosApoliceTab from "../_components/AnexosApoliceTab";
+import TarefasEConversa from "@/app/ui/tarefas/TarefasEConversa";
 
 function Campo({ rotulo, valor }: { rotulo: string; valor: React.ReactNode }) {
     return (
@@ -96,6 +97,7 @@ export default function ApoliceDetail(props: {
                 <Tab value="endossos" label={`Endossos (${props.endossos.length})`} />
                 <Tab value="sinistros" label={`Sinistros (${props.sinistros.length})`} />
                 <Tab value="anexos" label="Anexos" />
+                <Tab value="atividades" label="Tarefas e conversa" />
             </Tabs>
 
             <Paper variant="outlined" sx={{ p: 2.5 }}>
@@ -155,6 +157,7 @@ export default function ApoliceDetail(props: {
                     </Stack>
                 )}
                 {aba === "anexos" && <AnexosApoliceTab apoliceId={apoliceId} />}
+                {aba === "atividades" && <TarefasEConversa corretoraId={corretoraId} vinculo={{ tipo: "apolice", id: apoliceId }} />}
             </Paper>
         </Box>
     );

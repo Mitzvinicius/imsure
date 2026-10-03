@@ -574,61 +574,6 @@ export async function deletarNegocio({ negocioId }: { negocioId: string }) {
     return { error: null };
 }
 
-export async function listarAnotacoes({ negocioId }: { negocioId: string }) {
-    const supabase = await createClient();
-
-    const { data, error } = await supabase
-        .from("negocio_anotacoes")
-        .select("id, texto, usuario_nome, criado_em")
-        .eq("negocio_id", negocioId)
-        .order("criado_em", { ascending: false });
-
-    if (error) {
-        return { error: error.message, anotacoes: [] };
-    }
-    return { error: null, anotacoes: data ?? [] };
-}
-
-export async function criarAnotacao({ negocioId, texto }: { negocioId: string; texto: string }) {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-        return { error: "Usuario não encontrado" };
-    }
-    if (!texto.trim()) {
-        return { error: "Escreva alguma coisa antes de salvar" };
-    }
-
-    const usuarioNome = (user.user_metadata?.nome as string | undefined) ?? user.email ?? "Você";
-
-    const { error } = await supabase.from("negocio_anotacoes").insert({
-        negocio_id: negocioId,
-        usuario_id: user.id,
-        usuario_nome: usuarioNome,
-        texto: texto.trim(),
-    });
-
-    if (error) {
-        return { error: error.message };
-    }
-    return { error: null };
-}
-
-export async function deletarAnotacao({ anotacaoId }: { anotacaoId: string }) {
-    const supabase = await createClient();
-
-    const { error } = await supabase
-        .from("negocio_anotacoes")
-        .delete()
-        .eq("id", anotacaoId);
-
-    if (error) {
-        return { error: error.message };
-    }
-    return { error: null };
-}
-
 export async function listarHistorico({ negocioId }: { negocioId: string }) {
     const supabase = await createClient();
 
