@@ -165,6 +165,13 @@ Spec: [`superpowers/specs/2026-10-03-equipe-design.md`](superpowers/specs/2026-1
 - **Convite por link copiável** (7 dias, token só no link, banco guarda hash): não depende de envio de e-mail (limite baixo/spam do envio padrão).
 - Corrigiu de quebra o `selecionarPlano` (faltava policy de UPDATE em `contas`).
 
+## Contatos compartilhados na corretora
+
+Depois do teste com a segunda conta, o Mitz pediu que **todos vejam todos os contatos da corretora**, mas só os próprios negócios: sem isso o produtor cadastrava o cliente em duplicidade (ou batia no "CPF já cadastrado" sem conseguir achar o contato).
+- Fora da carteira: vê dados principais e o resumo "também tem com colegas"; **corrige só telefone e e-mail** (decisão do Mitz) — garantido por trigger no banco.
+- Financeiro, patrimônio, família e saúde continuam só para a carteira. Renda e patrimônio financeiro saíram de `contatos` para `contato_financeiro`, porque RLS não esconde colunas por linha.
+- Ao criar negócio/apólice com o contato, ele entra na carteira do produtor e a ficha completa libera.
+
 ## Pendências técnicas conhecidas
 
 1. **`contas` sem policy de `UPDATE`** — `selecionarPlano` está quebrado (RLS bloqueia a troca de plano, silenciosamente, sem erro visível). Precisa de uma policy tipo:

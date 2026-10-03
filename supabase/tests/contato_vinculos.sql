@@ -8,10 +8,10 @@ select '00000000-0000-0000-0000-0000000005c0', 'A', (select id from public.plano
 insert into public.corretoras (id, conta_id, nome) values
   ('00000000-0000-0000-0000-0000000005c1', '00000000-0000-0000-0000-0000000005c0', 'A1'),
   ('00000000-0000-0000-0000-0000000005c2', '00000000-0000-0000-0000-0000000005c0', 'A2');
-insert into public.contatos (id, corretora_id, nome, tipo_pessoa, estado_civil, renda_mensal) values
-  ('00000000-0000-0000-0000-0000000005d1', '00000000-0000-0000-0000-0000000005c1', 'João', 'fisica', 'casado', 8500),
-  ('00000000-0000-0000-0000-0000000005d2', '00000000-0000-0000-0000-0000000005c1', 'Maria', 'fisica', 'casado', null),
-  ('00000000-0000-0000-0000-0000000005d3', '00000000-0000-0000-0000-0000000005c2', 'Outra corretora', 'fisica', null, null);
+insert into public.contatos (id, corretora_id, nome, tipo_pessoa, estado_civil) values
+  ('00000000-0000-0000-0000-0000000005d1', '00000000-0000-0000-0000-0000000005c1', 'João', 'fisica', 'casado'),
+  ('00000000-0000-0000-0000-0000000005d2', '00000000-0000-0000-0000-0000000005c1', 'Maria', 'fisica', 'casado'),
+  ('00000000-0000-0000-0000-0000000005d3', '00000000-0000-0000-0000-0000000005c2', 'Outra corretora', 'fisica', null);
 insert into public.contato_vinculos (corretora_id, contato_id, parente_id, parentesco)
   values ('00000000-0000-0000-0000-0000000005c1', '00000000-0000-0000-0000-0000000005d1', '00000000-0000-0000-0000-0000000005d2', 'conjuge');
 
