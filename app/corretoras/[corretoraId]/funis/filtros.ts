@@ -37,3 +37,32 @@ export function negocioPassaNoFiltro(n: NegocioFiltravel, busca: string, filtros
 export function contarFiltrosAtivos(filtros: Filtros): number {
     return (Object.keys(filtros) as (keyof Filtros)[]).filter((k) => filtros[k] !== FILTROS_PADRAO[k]).length;
 }
+
+export function nomeCookieFiltros(corretoraId: string): string {
+    return `imsure_filtros_funil_${corretoraId}`;
+}
+
+const STATUS_VALIDOS = ["", "aberto", "ganho", "perdido"];
+
+// Cookie vem do navegador: tudo que não for texto válido volta para o padrão.
+export function lerFiltrosSalvos(json: string | undefined): Filtros {
+    if (!json) return FILTROS_PADRAO;
+    let bruto: unknown;
+    try {
+        bruto = JSON.parse(json);
+    } catch {
+        return FILTROS_PADRAO;
+    }
+    if (!bruto || typeof bruto !== "object") return FILTROS_PADRAO;
+    const obj = bruto as Record<string, unknown>;
+    const texto = (k: keyof Filtros) => (typeof obj[k] === "string" ? (obj[k] as string) : FILTROS_PADRAO[k]);
+    const status = typeof obj.status === "string" && STATUS_VALIDOS.includes(obj.status) ? (obj.status as Filtros["status"]) : FILTROS_PADRAO.status;
+    return {
+        cliente: texto("cliente"),
+        tipo: texto("tipo"),
+        ramo: texto("ramo"),
+        seguradora: texto("seguradora"),
+        criadoDe: texto("criadoDe"),
+        status,
+    };
+}

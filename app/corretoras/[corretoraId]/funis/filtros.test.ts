@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { contarFiltrosAtivos, FILTROS_PADRAO, negocioPassaNoFiltro } from "./filtros";
+import { contarFiltrosAtivos, FILTROS_PADRAO, lerFiltrosSalvos, negocioPassaNoFiltro, nomeCookieFiltros } from "./filtros";
 
 const base = { contato: { nome: "Ana Souza" }, tipo: "Seguro novo", ramo: "Automóvel", seguradora: "Porto Seguro", criado_em: "2026-09-10T12:00:00Z" };
 
@@ -35,5 +35,23 @@ describe("contarFiltrosAtivos", () => {
     it("mudar o status ou outro campo conta", () => {
         expect(contarFiltrosAtivos({ ...FILTROS_PADRAO, status: "" })).toBe(1);
         expect(contarFiltrosAtivos({ ...FILTROS_PADRAO, status: "ganho", ramo: "Automóvel" })).toBe(2);
+    });
+});
+
+describe("lerFiltrosSalvos", () => {
+    it("restaura o filtro salvo", () => {
+        const salvo = JSON.stringify({ ...FILTROS_PADRAO, status: "ganho", ramo: "Automóvel" });
+        expect(lerFiltrosSalvos(salvo)).toEqual({ ...FILTROS_PADRAO, status: "ganho", ramo: "Automóvel" });
+    });
+    it("status vazio salvo (todos) continua vazio", () => {
+        expect(lerFiltrosSalvos(JSON.stringify({ ...FILTROS_PADRAO, status: "" })).status).toBe("");
+    });
+    it("sem cookie, JSON quebrado ou valores estranhos caem no padrão", () => {
+        expect(lerFiltrosSalvos(undefined)).toEqual(FILTROS_PADRAO);
+        expect(lerFiltrosSalvos("{quebrado")).toEqual(FILTROS_PADRAO);
+        expect(lerFiltrosSalvos(JSON.stringify({ status: "invalido", tipo: 42 }))).toEqual(FILTROS_PADRAO);
+    });
+    it("nome do cookie é por corretora", () => {
+        expect(nomeCookieFiltros("abc")).toBe("imsure_filtros_funil_abc");
     });
 });

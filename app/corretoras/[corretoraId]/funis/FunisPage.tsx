@@ -27,7 +27,7 @@ import ListView from "./ListView";
 import NewDealModal from "./NewDealModal";
 import DealDetail from "./DealDetail";
 import FilterPanel from "./FilterPanel";
-import { contarFiltrosAtivos, FILTROS_PADRAO, negocioPassaNoFiltro, type Filtros } from "./filtros";
+import { contarFiltrosAtivos, FILTROS_PADRAO, negocioPassaNoFiltro, nomeCookieFiltros, type Filtros } from "./filtros";
 import { definirFunilAtivo, moverNegocio } from "@/app/lib/actions";
 import { Etapa, Fluxo, Negocio } from "./types";
 import { formatBRL } from "./constants";
@@ -39,6 +39,7 @@ export default function FunisPage({
     fluxosIniciais,
     etapasIniciais,
     negociosIniciais,
+    filtrosIniciais,
 }: {
     corretoraId: string;
     corretoraNome: string;
@@ -47,6 +48,7 @@ export default function FunisPage({
     fluxosIniciais: Fluxo[];
     etapasIniciais: Etapa[];
     negociosIniciais: Negocio[];
+    filtrosIniciais: Filtros;
 }) {
     const router = useRouter();
     const pathname = usePathname();
@@ -54,7 +56,13 @@ export default function FunisPage({
 
     const [view, setView] = useState<"kanban" | "lista">("kanban");
     const [busca, setBusca] = useState("");
-    const [filtros, setFiltros] = useState<Filtros>(FILTROS_PADRAO);
+    const [filtros, setFiltrosEstado] = useState<Filtros>(filtrosIniciais);
+
+    // Lembra o último filtro por corretora (lido de volta no servidor em page.tsx).
+    function setFiltros(f: Filtros) {
+        setFiltrosEstado(f);
+        document.cookie = `${nomeCookieFiltros(corretoraId)}=${encodeURIComponent(JSON.stringify(f))}; path=/; max-age=31536000; samesite=lax`;
+    }
     const [filterAnchor, setFilterAnchor] = useState<HTMLElement | null>(null);
     const [fluxoAnchor, setFluxoAnchor] = useState<HTMLElement | null>(null);
     const [modalOpen, setModalOpen] = useState(false);
@@ -83,7 +91,7 @@ export default function FunisPage({
     );
 
     const activeFilterCount = contarFiltrosAtivos(filtros);
-    const totalPipeline = negocios.filter((d) => d.status === "aberto").reduce((s, d) => s + Number(d.valor || 0), 0);
+    const totalPipeline = negociosFiltrados.reduce((s, d) => s + Number(d.valor || 0), 0);
 
     async function trocarFluxo(fluxoId: string) {
         setFluxoAnchor(null);
@@ -121,7 +129,7 @@ export default function FunisPage({
             >
                 <Box>
                     <Typography sx={{ fontWeight: 800, fontSize: 18 }}>Negócios</Typography>
-                    <Typography variant="caption" color="text.secondary">{formatBRL(totalPipeline)} em pipeline ativo</Typography>
+                    <Typography variant="caption" color="text.secondary">{formatBRL(totalPipeline)} {activeFilterCount === 0 && !busca.trim() ? "em pipeline ativo" : "nos negócios filtrados"}</Typography>
                 </Box>
 
                 <Button

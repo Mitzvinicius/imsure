@@ -1,4 +1,6 @@
+import { cookies } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
+import { lerFiltrosSalvos, nomeCookieFiltros } from "./filtros";
 import FunisPage from "./FunisPage";
 import type { Etapa, Fluxo, Negocio } from "./types";
 
@@ -9,6 +11,8 @@ export default async function Page({
 }) {
     const { corretoraId } = await params;
     const supabase = await createClient();
+    const cookieFiltros = (await cookies()).get(nomeCookieFiltros(corretoraId))?.value;
+    const filtrosIniciais = lerFiltrosSalvos(cookieFiltros?.startsWith("%") ? decodeURIComponent(cookieFiltros) : cookieFiltros);
 
     const { data: { user } } = await supabase.auth.getUser();
     const nomeUsuario = (user?.user_metadata?.nome as string | undefined) ?? user?.email ?? "Você";
@@ -63,6 +67,7 @@ export default async function Page({
             fluxosIniciais={fluxos}
             etapasIniciais={etapas}
             negociosIniciais={negocios}
+            filtrosIniciais={filtrosIniciais}
         />
     );
 }
