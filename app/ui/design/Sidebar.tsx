@@ -26,11 +26,13 @@ import type { CorretoraDoUsuario } from '@/app/lib/queries';
 import type { Permissao } from '@/app/lib/equipe/permissoes';
 import { usePermissoes } from './PermissoesContext';
 import GroupsOutlinedIcon from '@mui/icons-material/GroupsOutlined';
+import TaskAltOutlinedIcon from '@mui/icons-material/TaskAltOutlined';
 import { useColorMode } from './ThemeRegistry';
 import { createClient } from '@/utils/supabase/client';
 
 const NAV_ITEMS: { href: string; label: string; icon: typeof ViewKanbanOutlinedIcon; requer?: Permissao[] }[] = [
     { href: 'funis', label: 'Funis', icon: ViewKanbanOutlinedIcon },
+    { href: 'tarefas', label: 'Tarefas', icon: TaskAltOutlinedIcon },
     { href: 'contatos', label: 'Contatos', icon: PeopleOutlinedIcon },
     { href: 'apolices', label: 'Apólices', icon: DescriptionOutlinedIcon },
     { href: 'sinistros', label: 'Sinistros', icon: ReportProblemOutlinedIcon },
