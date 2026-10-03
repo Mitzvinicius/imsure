@@ -138,6 +138,22 @@ export function inserirMencao(texto: string, inicio: number, cursor: number, nom
 export type VisaoTarefas = "minhas" | "criadas" | "equipe" | "todas" | "sem_responsavel";
 export type FiltrosTarefas = { visao: VisaoTarefas; prioridade: Prioridade | ""; tipo: TipoVinculo | "avulsa" | "" };
 
+/** "Todas" = tudo o que a pessoa enxerga (a RLS já limita); assim nenhuma tarefa visível fica sem filtro. */
+export function visoesDisponiveis(p: { escopo: string; lider: boolean; podeGerirMembros: boolean }): { valor: VisaoTarefas; rotulo: string }[] {
+    return [
+        { valor: "minhas", rotulo: "Minhas" },
+        { valor: "criadas", rotulo: "Criadas por mim" },
+        ...(p.lider || p.escopo === "equipe" ? [{ valor: "equipe" as const, rotulo: "Equipe" }] : []),
+        { valor: "todas", rotulo: "Todas" },
+        ...(p.podeGerirMembros ? [{ valor: "sem_responsavel" as const, rotulo: "Sem responsável ativo" }] : []),
+    ];
+}
+
+export function textoOutrasCorretoras(n: number): string | null {
+    if (n <= 0) return null;
+    return n === 1 ? "1 não lida em outras corretoras" : `${n} não lidas em outras corretoras`;
+}
+
 export function filtrarTarefas<T extends { responsavel: Membro; criador: Membro; prioridade: Prioridade; vinculo: Vinculo | null }>(
     tarefas: T[],
     f: FiltrosTarefas,

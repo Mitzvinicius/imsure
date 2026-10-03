@@ -16,8 +16,8 @@ export default async function Page({
 
     const [abertas, concluidas, membros] = await Promise.all([
         supabase.from("tarefas").select(SELECT_TAREFA).eq("corretora_id", corretoraId).in("status", ["a_fazer", "em_andamento"]),
-        supabase.from("tarefas").select(SELECT_TAREFA).eq("corretora_id", corretoraId).eq("status", "concluida")
-            .order("concluida_em", { ascending: false }).limit(50),
+        supabase.from("tarefas").select(SELECT_TAREFA).eq("corretora_id", corretoraId).in("status", ["concluida", "cancelada"])
+            .order("atualizado_em", { ascending: false }).limit(50),
         getMembrosAtivos(corretoraId),
     ]);
     const tarefas = ((abertas.data ?? []) as unknown as TarefaBruta[]).map(normalizarTarefa);

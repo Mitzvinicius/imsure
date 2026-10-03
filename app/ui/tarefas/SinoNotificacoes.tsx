@@ -18,7 +18,7 @@ import TodayOutlinedIcon from "@mui/icons-material/TodayOutlined";
 import WarningAmberOutlinedIcon from "@mui/icons-material/WarningAmberOutlined";
 import TaskAltOutlinedIcon from "@mui/icons-material/TaskAltOutlined";
 import { createClient } from "@/utils/supabase/client";
-import { tempoRelativo } from "@/app/lib/tarefas/regras";
+import { tempoRelativo, textoOutrasCorretoras } from "@/app/lib/tarefas/regras";
 import type { NotificacaoLinha, TipoNotificacao } from "@/app/lib/tarefas/tipos";
 import { usePermissoes } from "@/app/ui/design/PermissoesContext";
 
@@ -31,22 +31,26 @@ const ICONE: Record<TipoNotificacao, typeof TaskAltOutlinedIcon> = {
     tarefa_concluida: TaskAltOutlinedIcon,
 };
 
-export default function SinoNotificacoes() {
+/** Mostra as notificações da corretora aberta; as das outras corretoras aparecem só como contagem. */
+export default function SinoNotificacoes({ corretoraId }: { corretoraId: string }) {
     const { usuarioId } = usePermissoes();
     const router = useRouter();
     const supabase = useMemo(() => createClient(), []);
     const [itens, setItens] = useState<NotificacaoLinha[]>([]);
     const [naoLidas, setNaoLidas] = useState(0);
+    const [outrasNaoLidas, setOutrasNaoLidas] = useState(0);
     const [anchor, setAnchor] = useState<HTMLElement | null>(null);
 
     const carregar = useCallback(async () => {
-        const [lista, contagem] = await Promise.all([
-            supabase.from("notificacoes").select("id, tipo, titulo, texto, link, lida_em, criado_em").order("criado_em", { ascending: false }).limit(20),
-            supabase.from("notificacoes").select("id", { count: "exact", head: true }).is("lida_em", null),
+        const [lista, contagem, outras] = await Promise.all([
+            supabase.from("notificacoes").select("id, tipo, titulo, texto, link, lida_em, criado_em").eq("corretora_id", corretoraId).order("criado_em", { ascending: false }).limit(20),
+            supabase.from("notificacoes").select("id", { count: "exact", head: true }).eq("corretora_id", corretoraId).is("lida_em", null),
+            supabase.from("notificacoes").select("id", { count: "exact", head: true }).neq("corretora_id", corretoraId).is("lida_em", null),
         ]);
         setItens((lista.data ?? []) as NotificacaoLinha[]);
         setNaoLidas(contagem.count ?? 0);
-    }, [supabase]);
+        setOutrasNaoLidas(outras.count ?? 0);
+    }, [supabase, corretoraId]);
 
     useEffect(() => {
         const inicial = setTimeout(carregar, 0);
@@ -71,7 +75,7 @@ export default function SinoNotificacoes() {
     async function marcarTodas() {
         setItens((l) => l.map((x) => ({ ...x, lida_em: x.lida_em ?? new Date().toISOString() })));
         setNaoLidas(0);
-        await supabase.from("notificacoes").update({ lida_em: new Date().toISOString() }).is("lida_em", null);
+        await supabase.from("notificacoes").update({ lida_em: new Date().toISOString() }).eq("corretora_id", corretoraId).is("lida_em", null);
     }
 
     const agora = new Date();
@@ -87,6 +91,11 @@ export default function SinoNotificacoes() {
                     <Typography sx={{ fontWeight: 700 }}>Notificações</Typography>
                     <Button size="small" onClick={marcarTodas} disabled={naoLidas === 0}>Marcar todas como lidas</Button>
                 </Stack>
+                {textoOutrasCorretoras(outrasNaoLidas) && (
+                    <Typography variant="caption" color="text.secondary" sx={{ display: "block", px: 2, pb: 1 }}>
+                        {textoOutrasCorretoras(outrasNaoLidas)} — troque de empresa no seletor para ver.
+                    </Typography>
+                )}
                 <Divider />
                 {itens.length === 0 && <Typography variant="body2" color="text.secondary" sx={{ px: 2, py: 3, textAlign: "center" }}>Nada por aqui ainda</Typography>}
                 {itens.map((n) => {

@@ -16,7 +16,7 @@ import Alert from "@mui/material/Alert";
 import AddIcon from "@mui/icons-material/Add";
 import { alterarStatusTarefa } from "@/app/lib/actions-tarefas";
 import {
-    GRUPOS_PRAZO, LABEL_PRIORIDADE, LABEL_TIPO_VINCULO, agruparPorPrazo, filtrarTarefas,
+    GRUPOS_PRAZO, LABEL_PRIORIDADE, LABEL_TIPO_VINCULO, agruparPorPrazo, filtrarTarefas, visoesDisponiveis,
     type FiltrosTarefas, type VisaoTarefas,
 } from "@/app/lib/tarefas/regras";
 import type { Prioridade, TarefaLinha, TipoVinculo } from "@/app/lib/tarefas/tipos";
@@ -45,13 +45,7 @@ export default function TarefasPage({ corretoraId, tarefas: tarefasProps, conclu
     const hoje = hojeSaoPaulo();
     const ativos = useMemo(() => new Set(membrosAtivos), [membrosAtivos]);
 
-    const visoes: { valor: VisaoTarefas; rotulo: string }[] = [
-        { valor: "minhas", rotulo: "Minhas" },
-        { valor: "criadas", rotulo: "Criadas por mim" },
-        ...(lider || escopo === "equipe" ? [{ valor: "equipe" as const, rotulo: "Equipe" }] : []),
-        ...(escopo === "tudo" ? [{ valor: "todas" as const, rotulo: "Todas" }] : []),
-        ...(pode("equipe.membros") ? [{ valor: "sem_responsavel" as const, rotulo: "Sem responsável ativo" }] : []),
-    ];
+    const visoes = visoesDisponiveis({ escopo, lider, podeGerirMembros: pode("equipe.membros") });
     const ctx = { usuarioId, membrosAtivos: ativos };
     const grupos = agruparPorPrazo(filtrarTarefas(tarefas, filtros, ctx), hoje);
     const fechadasFiltradas = filtrarTarefas(concluidas, filtros, ctx);
@@ -91,7 +85,7 @@ export default function TarefasPage({ corretoraId, tarefas: tarefasProps, conclu
                     <MenuItem value="avulsa">Avulsas</MenuItem>
                     {(Object.keys(LABEL_TIPO_VINCULO) as TipoVinculo[]).map((t) => <MenuItem key={t} value={t}>{LABEL_TIPO_VINCULO[t]}</MenuItem>)}
                 </TextField>
-                <FormControlLabel control={<Switch checked={mostrarConcluidas} onChange={(e) => setMostrarConcluidas(e.target.checked)} />} label="Concluídas" />
+                <FormControlLabel control={<Switch checked={mostrarConcluidas} onChange={(e) => setMostrarConcluidas(e.target.checked)} />} label="Encerradas" />
             </Stack>
 
             <Stack spacing={2}>
@@ -106,8 +100,8 @@ export default function TarefasPage({ corretoraId, tarefas: tarefasProps, conclu
                 ))}
                 {mostrarConcluidas && (
                     <Paper variant="outlined" sx={{ p: 2 }}>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5 }}>Concluídas recentemente ({fechadasFiltradas.length})</Typography>
-                        <ListaTarefas tarefas={fechadasFiltradas} hoje={hoje} mostrarVinculo onAbrir={(t) => setDialogo({ tarefa: t })} onAlternar={alternar} vazio="Nenhuma tarefa concluída" />
+                        <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5 }}>Encerradas recentemente ({fechadasFiltradas.length})</Typography>
+                        <ListaTarefas tarefas={fechadasFiltradas} hoje={hoje} mostrarVinculo onAbrir={(t) => setDialogo({ tarefa: t })} onAlternar={alternar} vazio="Nenhuma tarefa encerrada" />
                     </Paper>
                 )}
             </Stack>

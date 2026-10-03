@@ -50,7 +50,8 @@ export default function ListaTarefas({ tarefas, hoje, onAbrir, onAlternar, mostr
                                 <Typography noWrap variant="caption" color="text.secondary" component="div">{t.rotuloVinculo}</Typography>
                             )}
                         </Box>
-                        {t.prioridade !== "media" && <Chip size="small" variant="outlined" label={LABEL_PRIORIDADE[t.prioridade]} color={COR_PRIORIDADE[t.prioridade]} />}
+                        {t.status === "cancelada" && <Chip size="small" label="Cancelada" />}
+                        {t.prioridade !== "media" && t.status !== "cancelada" && <Chip size="small" variant="outlined" label={LABEL_PRIORIDADE[t.prioridade]} color={COR_PRIORIDADE[t.prioridade]} />}
                         <Typography variant="caption" sx={{ minWidth: 92, textAlign: "right", color: atrasada ? "error.main" : "text.secondary", fontWeight: atrasada ? 700 : 400 }}>
                             {textoPrazo(t.prazo, t.prazo_hora, hoje)}
                         </Typography>

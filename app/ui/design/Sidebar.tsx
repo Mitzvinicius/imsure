@@ -93,7 +93,7 @@ export default function Sidebar({
                 <CloudOutlinedIcon sx={{ color: 'secondary.main' }} />
                 <Typography sx={{ fontWeight: 800, fontSize: 22, letterSpacing: '-0.02em' }}>imsure</Typography>
                 <Box sx={{ flex: 1 }} />
-                <SinoNotificacoes />
+                <SinoNotificacoes corretoraId={currentCorretoraId} />
             </Stack>
 
             <Box sx={{ px: 2, pb: 1.5 }}>

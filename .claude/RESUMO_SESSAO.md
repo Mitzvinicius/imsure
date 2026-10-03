@@ -13,7 +13,7 @@ O Claude desenvolve o código e o Mitz foca no produto (sem método socrático).
 
 ## Próximo passo
 - Parte B testada pelo Mitz com as duas contas (sino em tempo real, @menção, concluir): funcionou. PR #3 (`feat/tarefas` → `feat/equipe-tarefas`) aberto. Ordem de merge: #1 → #2 → #3.
-- Em seguida, o que o Mitz priorizar: roadmap do portal do cliente ou as pendências abaixo (inclui os "minors" da revisão final das tarefas, listados no PR #3 e na conversa).
+- Em seguida, o que o Mitz priorizar: roadmap do portal do cliente ou as pendências abaixo (os 4 ajustes pequenos das tarefas — filtros, canceladas, link de negócio de outro funil, sino por corretora — já foram resolvidos).
 
 ## Pendências registradas (menores)
 - Tarefas: remover `negocio_anotacoes`; canais e-mail/WhatsApp; tarefas recorrentes/automáticas (fora de escopo).

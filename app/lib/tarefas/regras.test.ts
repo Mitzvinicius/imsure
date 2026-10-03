@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
     agruparPorPrazo, compararTarefas, consultaMencaoAtiva, extrairMencoes, filtrarTarefas, grupoPrazo,
-    inserirMencao, linkAlvo, paramsAlvo, segmentarMencoes, tempoRelativo, textoPrazo, validarTarefa,
+    inserirMencao, linkAlvo, paramsAlvo, segmentarMencoes, tempoRelativo, textoOutrasCorretoras, textoPrazo, validarTarefa, visoesDisponiveis,
 } from "./regras";
 import type { DadosTarefa, Prioridade, TarefaLinha } from "./tipos";
 
@@ -148,5 +148,24 @@ describe("validarTarefa", () => {
         expect(validarTarefa({ ...base, titulo: "x".repeat(201) })).toBe("O título pode ter no máximo 200 caracteres.");
         expect(validarTarefa({ ...base, prazoHora: "10:00" })).toBe("Escolha a data do prazo antes da hora.");
         expect(validarTarefa({ ...base, responsavelId: "" })).toBe("Escolha o responsável.");
+    });
+});
+
+describe("visões disponíveis", () => {
+    const valores = (p: Parameters<typeof visoesDisponiveis>[0]) => visoesDisponiveis(p).map((v) => v.valor);
+    it("produtor: minhas, criadas e todas (o que ele enxerga)", () => {
+        expect(valores({ escopo: "propria", lider: false, podeGerirMembros: false })).toEqual(["minhas", "criadas", "todas"]);
+    });
+    it("líder ganha equipe; gestor de membros ganha sem responsável", () => {
+        expect(valores({ escopo: "propria", lider: true, podeGerirMembros: false })).toEqual(["minhas", "criadas", "equipe", "todas"]);
+        expect(valores({ escopo: "tudo", lider: false, podeGerirMembros: true })).toEqual(["minhas", "criadas", "todas", "sem_responsavel"]);
+    });
+});
+
+describe("textoOutrasCorretoras", () => {
+    it("singular, plural e nada", () => {
+        expect(textoOutrasCorretoras(0)).toBeNull();
+        expect(textoOutrasCorretoras(1)).toBe("1 não lida em outras corretoras");
+        expect(textoOutrasCorretoras(3)).toBe("3 não lidas em outras corretoras");
     });
 });
