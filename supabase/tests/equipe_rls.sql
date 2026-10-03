@@ -65,7 +65,7 @@ select set_config('request.jwt.claims','{"sub":"00000000-0000-0000-0000-00000000
 do $$ begin
   if (select count(*) from public.apolices) <> 1 then raise exception 'FALHA: P1 deveria ver só EQ-1 (viu %)', (select count(*) from public.apolices); end if;
   if (select count(*) from public.negocios) <> 1 then raise exception 'FALHA: P1 deveria ver só o próprio negócio'; end if;
-  if (select count(*) from public.contatos) <> 1 then raise exception 'FALHA: P1 deveria ver só Cliente 1'; end if;
+  if (select count(*) from public.contatos where public.usuario_ve_contato(id)) <> 1 then raise exception 'FALHA: só Cliente 1 deveria estar na carteira de P1'; end if;
   if (select count(*) from public.contato_saude) <> 1 then raise exception 'FALHA: P1 deveria ver a saúde do próprio cliente'; end if;
   if (select count(*) from public.usuarios) < 7 then raise exception 'FALHA: P1 deveria ver os colegas da corretora'; end if;
   begin
@@ -84,7 +84,7 @@ end $$;
 select set_config('request.jwt.claims','{"sub":"00000000-0000-0000-0000-00000000e0e2","role":"authenticated"}',true);
 do $$ begin
   if (select count(*) from public.apolices) <> 2 then raise exception 'FALHA: P2 deveria ver EQ-2 e EQ-3'; end if;
-  if (select count(*) from public.contatos) <> 2 then raise exception 'FALHA: P2 deveria ver Cliente 1 e 2'; end if;
+  if (select count(*) from public.contatos where public.usuario_ve_contato(id)) <> 2 then raise exception 'FALHA: Cliente 1 e 2 deveriam estar na carteira de P2'; end if;
   if exists (select 1 from public.apolices where id = '00000000-0000-0000-0000-00000000ea01') then raise exception 'FALHA: P2 vê apólice de P1 por id'; end if;
 end $$;
 
