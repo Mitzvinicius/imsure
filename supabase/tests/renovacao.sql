@@ -16,12 +16,12 @@ insert into public.contatos (id, corretora_id, nome, tipo_pessoa) values
   ('00000000-0000-0000-0000-0000000002d0', '00000000-0000-0000-0000-0000000002c1', 'Cliente S', 'fisica');
 
 -- hoje fixo = 2026-10-02 ; janela de 60 dias => fim_vigencia até 2026-12-01 entra
-insert into public.apolices (id, corretora_id, contato_id, seguradora_id, ramo, numero, inicio_vigencia, fim_vigencia, forma_pagamento, premio, cancelada_em) values
-  ('00000000-0000-0000-0000-0000000001a1', '00000000-0000-0000-0000-0000000001c1', '00000000-0000-0000-0000-0000000001d0', (select id from public.seguradoras order by nome limit 1), 'Automóvel', 'R-DENTRO', '2025-11-15', '2026-11-15', 'boleto', 2000, null),
-  ('00000000-0000-0000-0000-0000000001a2', '00000000-0000-0000-0000-0000000001c1', '00000000-0000-0000-0000-0000000001d0', (select id from public.seguradoras order by nome limit 1), 'Automóvel', 'R-FORA', '2026-03-01', '2027-03-01', 'boleto', 2000, null),
-  ('00000000-0000-0000-0000-0000000001a3', '00000000-0000-0000-0000-0000000001c1', '00000000-0000-0000-0000-0000000001d0', (select id from public.seguradoras order by nome limit 1), 'Automóvel', 'R-CANCEL', '2025-11-15', '2026-11-15', 'boleto', 2000, '2026-06-01'),
-  ('00000000-0000-0000-0000-0000000001a4', '00000000-0000-0000-0000-0000000001c1', '00000000-0000-0000-0000-0000000001d0', (select id from public.seguradoras order by nome limit 1), 'Automóvel', 'R-VENCIDA', '2025-01-01', '2026-01-01', 'boleto', 2000, null),
-  ('00000000-0000-0000-0000-0000000002a1', '00000000-0000-0000-0000-0000000002c1', '00000000-0000-0000-0000-0000000002d0', (select id from public.seguradoras order by nome limit 1), 'Automóvel', 'S-SEMFLUXO', '2025-11-15', '2026-11-15', 'boleto', 2000, null);
+insert into public.apolices (id, corretora_id, contato_id, seguradora_id, ramo, numero, inicio_vigencia, fim_vigencia, forma_pagamento, premio, cancelada_em, responsavel_usuario_id) values
+  ('00000000-0000-0000-0000-0000000001a1', '00000000-0000-0000-0000-0000000001c1', '00000000-0000-0000-0000-0000000001d0', (select id from public.seguradoras order by nome limit 1), 'Automóvel', 'R-DENTRO', '2025-11-15', '2026-11-15', 'boleto', 2000, null, '00000000-0000-0000-0000-0000000001aa'),
+  ('00000000-0000-0000-0000-0000000001a2', '00000000-0000-0000-0000-0000000001c1', '00000000-0000-0000-0000-0000000001d0', (select id from public.seguradoras order by nome limit 1), 'Automóvel', 'R-FORA', '2026-03-01', '2027-03-01', 'boleto', 2000, null, '00000000-0000-0000-0000-0000000001aa'),
+  ('00000000-0000-0000-0000-0000000001a3', '00000000-0000-0000-0000-0000000001c1', '00000000-0000-0000-0000-0000000001d0', (select id from public.seguradoras order by nome limit 1), 'Automóvel', 'R-CANCEL', '2025-11-15', '2026-11-15', 'boleto', 2000, '2026-06-01', '00000000-0000-0000-0000-0000000001aa'),
+  ('00000000-0000-0000-0000-0000000001a4', '00000000-0000-0000-0000-0000000001c1', '00000000-0000-0000-0000-0000000001d0', (select id from public.seguradoras order by nome limit 1), 'Automóvel', 'R-VENCIDA', '2025-01-01', '2026-01-01', 'boleto', 2000, null, '00000000-0000-0000-0000-0000000001aa'),
+  ('00000000-0000-0000-0000-0000000002a1', '00000000-0000-0000-0000-0000000002c1', '00000000-0000-0000-0000-0000000002d0', (select id from public.seguradoras order by nome limit 1), 'Automóvel', 'S-SEMFLUXO', '2025-11-15', '2026-11-15', 'boleto', 2000, null, '00000000-0000-0000-0000-0000000001aa');
 
 do $$
 declare n1 integer; n2 integer;

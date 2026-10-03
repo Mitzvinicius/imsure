@@ -136,6 +136,11 @@ function linhasParcelas(apoliceId: string, endossoId: string | null, parcelas: P
     }));
 }
 
+async function vendedorDoNegocio(supabase: Supabase, negocioId: string): Promise<string | undefined> {
+    const { data } = await supabase.from("negocios").select("vendedor_usuario_id").eq("id", negocioId).maybeSingle();
+    return (data?.vendedor_usuario_id as string | undefined) ?? undefined;
+}
+
 async function validarReferenciasApolice(supabase: Supabase, corretoraId: string, dados: ApoliceForm): Promise<string | null> {
     if (dados.negocioOrigemId) {
         const { data } = await supabase
@@ -210,6 +215,7 @@ export async function criarApolice({ corretoraId, dados }: { corretoraId: string
             contato_id: contato.contatoId,
             negocio_origem_id: dados.negocioOrigemId,
             apolice_anterior_id: dados.apoliceAnteriorId,
+            responsavel_usuario_id: dados.responsavelUsuarioId ?? (dados.negocioOrigemId ? await vendedorDoNegocio(supabase, dados.negocioOrigemId) : undefined),
         })
         .select("id")
         .single();
@@ -253,7 +259,11 @@ export async function atualizarApolice({ apoliceId, dados }: { apoliceId: string
 
     const { error } = await supabase
         .from("apolices")
-        .update({ ...linhaApolice(dados), contato_id: contato.contatoId })
+        .update({
+            ...linhaApolice(dados),
+            contato_id: contato.contatoId,
+            ...(dados.responsavelUsuarioId ? { responsavel_usuario_id: dados.responsavelUsuarioId } : {}),
+        })
         .eq("id", apoliceId);
     if (error) return { error: mensagemErroSeguros(error) };
 

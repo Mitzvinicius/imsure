@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
+import { getMembrosAtivos } from "@/app/lib/equipe/sessao";
 import { lerFiltrosSalvos, nomeCookieFiltros } from "./filtros";
 import FunisPage from "./FunisPage";
 import type { Etapa, Fluxo, Negocio } from "./types";
@@ -68,6 +69,7 @@ export default async function Page({
             etapasIniciais={etapas}
             negociosIniciais={negocios}
             filtrosIniciais={filtrosIniciais}
+            membros={await getMembrosAtivos(corretoraId)}
         />
     );
 }

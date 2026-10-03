@@ -12,9 +12,9 @@ insert into public.corretoras (id, conta_id, nome, onboarding_concluido)
 values ('00000000-0000-0000-0000-00000000c1aa', '00000000-0000-0000-0000-00000000c0aa', 'Corretora A', true);
 insert into public.contatos (id, corretora_id, nome, tipo_pessoa)
 values ('00000000-0000-0000-0000-00000000c2aa', '00000000-0000-0000-0000-00000000c1aa', 'Cliente A', 'fisica');
-insert into public.apolices (id, corretora_id, contato_id, seguradora_id, ramo, numero, inicio_vigencia, fim_vigencia, forma_pagamento)
+insert into public.apolices (id, corretora_id, contato_id, seguradora_id, ramo, numero, inicio_vigencia, fim_vigencia, forma_pagamento, responsavel_usuario_id)
 values ('00000000-0000-0000-0000-00000000a0aa', '00000000-0000-0000-0000-00000000c1aa', '00000000-0000-0000-0000-00000000c2aa',
-        (select id from public.seguradoras order by nome limit 1), 'Automóvel', 'RLS-1', '2026-01-01', '2027-01-01', 'boleto');
+        (select id from public.seguradoras order by nome limit 1), 'Automóvel', 'RLS-1', '2026-01-01', '2027-01-01', 'boleto', '00000000-0000-0000-0000-0000000000aa');
 insert into public.parcelas (apolice_id, numero, vencimento, valor) values ('00000000-0000-0000-0000-00000000a0aa', 1, '2026-02-01', 100);
 insert into public.coberturas (apolice_id, nome) values ('00000000-0000-0000-0000-00000000a0aa', 'Casco');
 insert into public.bens_auto (apolice_id, placa) values ('00000000-0000-0000-0000-00000000a0aa', 'RLS0A00');

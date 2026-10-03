@@ -9,9 +9,9 @@ insert into public.corretoras (id, conta_id, nome) values ('00000000-0000-0000-0
 insert into public.contatos (id, corretora_id, nome, tipo_pessoa) values
   ('00000000-0000-0000-0000-0000000006d1', '00000000-0000-0000-0000-0000000006c1', 'João', 'fisica'),
   ('00000000-0000-0000-0000-0000000006d2', '00000000-0000-0000-0000-0000000006c1', 'Maria', 'fisica');
-insert into public.apolices (id, corretora_id, contato_id, seguradora_id, ramo, numero, inicio_vigencia, fim_vigencia, forma_pagamento) values
-  ('00000000-0000-0000-0000-0000000006a1', '00000000-0000-0000-0000-0000000006c1', '00000000-0000-0000-0000-0000000006d1', (select id from public.seguradoras order by nome limit 1), 'Automóvel', 'PAT-1', '2026-01-01', '2027-01-01', 'boleto'),
-  ('00000000-0000-0000-0000-0000000006a2', '00000000-0000-0000-0000-0000000006c1', '00000000-0000-0000-0000-0000000006d2', (select id from public.seguradoras order by nome limit 1), 'Automóvel', 'PAT-2', '2026-01-01', '2027-01-01', 'boleto');
+insert into public.apolices (id, corretora_id, contato_id, seguradora_id, ramo, numero, inicio_vigencia, fim_vigencia, forma_pagamento, responsavel_usuario_id) values
+  ('00000000-0000-0000-0000-0000000006a1', '00000000-0000-0000-0000-0000000006c1', '00000000-0000-0000-0000-0000000006d1', (select id from public.seguradoras order by nome limit 1), 'Automóvel', 'PAT-1', '2026-01-01', '2027-01-01', 'boleto', '00000000-0000-0000-0000-0000000006aa'),
+  ('00000000-0000-0000-0000-0000000006a2', '00000000-0000-0000-0000-0000000006c1', '00000000-0000-0000-0000-0000000006d2', (select id from public.seguradoras order by nome limit 1), 'Automóvel', 'PAT-2', '2026-01-01', '2027-01-01', 'boleto', '00000000-0000-0000-0000-0000000006aa');
 insert into public.contato_bens (id, corretora_id, contato_id, tipo, descricao, valor_estimado, placa)
   values ('00000000-0000-0000-0000-0000000006b1', '00000000-0000-0000-0000-0000000006c1', '00000000-0000-0000-0000-0000000006d1', 'veiculo', 'Civic 2022', 120000, 'ABC1D23');
 insert into public.contato_bem_apolices (bem_id, apolice_id, contato_id)

@@ -1,7 +1,6 @@
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
-import { getContasComCorretoras } from "@/app/lib/queries";
+import { getCorretorasDoUsuario } from "@/app/lib/queries";
 import AccountsPage from "./AccountsPage";
 
 export default async function ContasPage() {
@@ -13,15 +12,16 @@ export default async function ContasPage() {
         redirect("/auth");
     }
 
-    const contas = await getContasComCorretoras();
-
-    const accounts = contas.map((conta) => ({
-        id: conta.id,
-        nome: conta.nome,
+    const corretoras = await getCorretorasDoUsuario();
+    const accounts = corretoras.map((c) => ({
+        id: c.corretoraId,
+        nome: c.corretoraNome,
+        contaNome: c.contaNome,
         logo: null as string | null,
-        papel: "owner" as const,
-        corretoraId: conta.corretoraId,
-        onboardingConcluido: conta.onboardingConcluido,
+        papel: (c.souDono ? "owner" : "guest") as "owner" | "guest",
+        cargo: c.cargo,
+        corretoraId: c.corretoraId as string | null,
+        onboardingConcluido: c.onboardingConcluido,
     }));
 
     const nomeUsuario = (user.user_metadata?.nome as string | undefined) ?? user.email ?? "Usuário";

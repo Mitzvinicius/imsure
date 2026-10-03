@@ -77,6 +77,7 @@ export type ApoliceForm = {
     formaPagamento: FormaPagamento;
     negocioOrigemId: string | null;
     apoliceAnteriorId: string | null;
+    responsavelUsuarioId: string | null;
     bem: BemSeguradoForm;
     coberturas: CoberturaForm[];
     parcelas: ParcelaForm[];

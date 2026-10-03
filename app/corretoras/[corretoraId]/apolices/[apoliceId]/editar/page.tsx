@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
+import { getMembrosAtivos } from "@/app/lib/equipe/sessao";
 import { RAMOS_OPCOES } from "@/app/lib/seguros/ramos";
 import type { Seguradora } from "@/app/lib/seguros/types";
 import ApoliceForm from "../../_components/ApoliceForm";
@@ -27,6 +28,7 @@ export default async function Page({ params }: { params: Promise<{ corretoraId: 
             contatoInicial={carregado.contato}
             seguradoras={(seguradoras ?? []) as Seguradora[]}
             ramos={ramosCorretora.length ? ramosCorretora : [...RAMOS_OPCOES]}
+            membros={await getMembrosAtivos(corretoraId)}
         />
     );
 }

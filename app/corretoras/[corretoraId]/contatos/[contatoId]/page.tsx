@@ -22,14 +22,14 @@ export default async function Page({
 
     const { data: c } = await supabase
         .from("contatos")
-        .select("id, nome, email, telefone, cpf_cnpj, tipo_pessoa, data_nascimento, estado_civil, renda_mensal, patrimonio_financeiro")
+        .select("id, nome, email, telefone, cpf_cnpj, tipo_pessoa, data_nascimento, estado_civil, criador:usuarios!contatos_criado_por_usuario_id_fkey(nome)")
         .eq("id", contatoId)
         .eq("corretora_id", corretoraId)
         .maybeSingle();
     if (!c) notFound();
 
     const pessoa = "id, nome, telefone, email";
-    const [{ data: vinculos }, { data: bens }, { data: apolices }, { data: saude }] = await Promise.all([
+    const [{ data: vinculos }, { data: bens }, { data: apolices }, { data: saude }, { data: produtos }, { data: financeiro }, { data: emCarteira }] = await Promise.all([
         supabase
             .from("contato_vinculos")
             .select(`id, parentesco, contato:contatos!contato_vinculos_contato_fkey(${pessoa}), parente:contatos!contato_vinculos_parente_fkey(${pessoa})`)
@@ -45,6 +45,9 @@ export default async function Page({
             .eq("contato_id", contatoId)
             .order("fim_vigencia", { ascending: false }),
         supabase.from("contato_saude").select("peso_kg, altura_m, atualizado_em").eq("contato_id", contatoId).maybeSingle(),
+        supabase.rpc("produtos_do_contato_resumo", { p_contato_id: contatoId }),
+        supabase.from("contato_financeiro").select("renda_mensal, patrimonio_financeiro").eq("contato_id", contatoId).maybeSingle(),
+        supabase.rpc("usuario_ve_contato", { p_contato_id: contatoId }),
     ]);
 
     const idsApolices = (apolices ?? []).map((a) => a.id as string);
@@ -93,8 +96,8 @@ export default async function Page({
         tipoPessoa: c.tipo_pessoa as "fisica" | "juridica",
         dataNascimento: c.data_nascimento as string | null,
         estadoCivil: c.estado_civil as EstadoCivil | null,
-        rendaMensal: c.renda_mensal != null ? Number(c.renda_mensal) : null,
-        patrimonioFinanceiro: c.patrimonio_financeiro != null ? Number(c.patrimonio_financeiro) : null,
+        rendaMensal: financeiro?.renda_mensal != null ? Number(financeiro.renda_mensal) : null,
+        patrimonioFinanceiro: financeiro?.patrimonio_financeiro != null ? Number(financeiro.patrimonio_financeiro) : null,
     };
 
     return (
@@ -109,6 +112,9 @@ export default async function Page({
                 alturaM: saude?.altura_m != null ? Number(saude.altura_m) : null,
                 atualizadoEm: (saude?.atualizado_em as string | undefined) ?? null,
             }}
+            produtosColegas={((produtos ?? []) as { tipo: string; ramo: string; situacao: string; responsavel_nome: string | null; meu: boolean }[]).filter((p) => !p.meu)}
+            emCarteira={emCarteira === true}
+            donoCarteira={(c.criador as unknown as { nome: string } | null)?.nome ?? null}
             abaInicial={(ABAS as readonly string[]).includes(aba ?? "") ? (aba as (typeof ABAS)[number]) : "principais"}
         />
     );

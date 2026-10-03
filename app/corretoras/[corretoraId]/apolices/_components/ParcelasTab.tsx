@@ -22,6 +22,7 @@ import { formatData } from "@/app/lib/seguros/datas";
 import { LABEL_STATUS_PARCELA, type Endosso, type Parcela, type ParcelaForm } from "@/app/lib/seguros/types";
 import { formatBRL } from "../../funis/constants";
 import ParcelasFields from "./ParcelasFields";
+import { usePermissoes } from "@/app/ui/design/PermissoesContext";
 
 const COR = { aberta: "default", paga: "success", comissao_recebida: "info" } as const;
 
@@ -41,6 +42,7 @@ export default function ParcelasTab({
     percentualComissao: number | null;
 }) {
     const router = useRouter();
+    const { pode } = usePermissoes();
     const [adicionando, setAdicionando] = useState(false);
     const [novas, setNovas] = useState<ParcelaForm[]>([]);
     const [erroNovas, setErroNovas] = useState<string | null>(null);
@@ -140,7 +142,7 @@ export default function ParcelasTab({
                             </TableCell>
                             <TableCell align="right">
                                 <Button size="small" onClick={() => setEditando(p)}>Editar</Button>
-                                {p.baixa_origem !== "extrato" && (
+                                {p.baixa_origem !== "extrato" && pode("parcelas.baixa") && (
                                     <Button size="small" onClick={() => baixa(p)}>{p.status === "aberta" ? "Dar baixa" : "Desfazer baixa"}</Button>
                                 )}
                             </TableCell>

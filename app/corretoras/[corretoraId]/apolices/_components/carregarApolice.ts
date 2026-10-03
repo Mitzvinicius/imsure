@@ -8,7 +8,7 @@ export function formVazio(): ApoliceForm {
     return {
         contatoId: null, novoContato: null, seguradoraId: "", ramo: "", numero: "",
         inicioVigencia: "", fimVigencia: "", premio: null, percentualComissao: null,
-        formaPagamento: "boleto", negocioOrigemId: null, apoliceAnteriorId: null,
+        formaPagamento: "boleto", negocioOrigemId: null, apoliceAnteriorId: null, responsavelUsuarioId: null,
         bem: { tipo: "livre", descricao: "" }, coberturas: [], parcelas: [],
     };
 }
@@ -84,6 +84,7 @@ export async function carregarApoliceForm(supabase: Supabase, apoliceId: string)
             formaPagamento: a.forma_pagamento as FormaPagamento,
             negocioOrigemId: a.negocio_origem_id as string | null,
             apoliceAnteriorId: a.apolice_anterior_id as string | null,
+            responsavelUsuarioId: a.responsavel_usuario_id as string | null,
             bem,
             coberturas: (coberturas ?? []).map((c) => ({ nome: c.nome as string, importancia_segurada: c.importancia_segurada as number | null, franquia: c.franquia as number | null })),
             parcelas: [],

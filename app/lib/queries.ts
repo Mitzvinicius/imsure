@@ -1,43 +1,40 @@
 import { createClient } from "@/utils/supabase/server";
 
-type SupabaseServerClient = ReturnType<typeof createClient>;
-
-export type ContaComCorretora = {
-    id: string;
-    nome: string;
-    corretoraId: string | null;
+export type CorretoraDoUsuario = {
+    corretoraId: string;
     corretoraNome: string;
+    contaId: string;
+    contaNome: string;
+    cargo: string;
+    souDono: boolean;
     onboardingConcluido: boolean;
 };
 
-export async function getContasComCorretoras(): Promise<ContaComCorretora[]> {
+export async function getCorretorasDoUsuario(): Promise<CorretoraDoUsuario[]> {
     const supabase = await createClient();
-    const { data: contas } = await supabase
-        .from("contas")
-        .select("id, nome")
-        .order("criado_em", { ascending: false });
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
 
-    const contaIds = (contas ?? []).map((c) => c.id as string);
+    const { data } = await supabase
+        .from("usuario_corretora")
+        .select("cargo:cargos(nome), corretora:corretoras(id, nome, onboarding_concluido, conta:contas(id, nome, owner_usuario_id))")
+        .eq("usuario_id", user.id)
+        .eq("ativo", true);
 
-    const { data: corretoras } = contaIds.length
-        ? await supabase
-            .from("corretoras")
-            .select("id, conta_id, nome, onboarding_concluido")
-            .in("conta_id", contaIds)
-        : { data: [] as { id: string; conta_id: string; nome: string; onboarding_concluido: boolean }[] };
-
-    const corretoraPorConta = new Map(
-        (corretoras ?? []).map((c) => [c.conta_id as string, c])
-    );
-
-    return (contas ?? []).map((conta) => {
-        const corretora = corretoraPorConta.get(conta.id as string);
-        return {
-            id: conta.id as string,
-            nome: conta.nome as string,
-            corretoraId: (corretora?.id as string | undefined) ?? null,
-            corretoraNome: (corretora?.nome as string | undefined) ?? (conta.nome as string),
-            onboardingConcluido: (corretora?.onboarding_concluido as boolean | undefined) ?? false,
-        };
-    });
+    type Linha = {
+        cargo: { nome: string } | null;
+        corretora: { id: string; nome: string; onboarding_concluido: boolean; conta: { id: string; nome: string; owner_usuario_id: string } | null } | null;
+    };
+    return ((data ?? []) as unknown as Linha[])
+        .filter((l) => l.corretora?.conta)
+        .map((l) => ({
+            corretoraId: l.corretora!.id,
+            corretoraNome: l.corretora!.nome,
+            contaId: l.corretora!.conta!.id,
+            contaNome: l.corretora!.conta!.nome,
+            cargo: l.cargo?.nome ?? "—",
+            souDono: l.corretora!.conta!.owner_usuario_id === user.id,
+            onboardingConcluido: l.corretora!.onboarding_concluido,
+        }))
+        .sort((a, b) => a.contaNome.localeCompare(b.contaNome) || a.corretoraNome.localeCompare(b.corretoraNome));
 }

@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
+import { getMembrosAtivos } from "@/app/lib/equipe/sessao";
 import { RAMOS_OPCOES } from "@/app/lib/seguros/ramos";
 import type { ContatoResumo, Seguradora } from "@/app/lib/seguros/types";
 import ApoliceForm from "../_components/ApoliceForm";
@@ -30,7 +31,7 @@ export default async function Page({
     if (negocioId) {
         const { data: n } = await supabase
             .from("negocios")
-            .select("id, ramo, seguradora, valor, apolice_renovada_id, contato:contatos(id, nome, cpf_cnpj)")
+            .select("id, ramo, seguradora, valor, apolice_renovada_id, vendedor_usuario_id, contato:contatos(id, nome, cpf_cnpj)")
             .eq("id", negocioId)
             .maybeSingle();
         if (n) {
@@ -43,10 +44,11 @@ export default async function Page({
                 premio: n.valor as number | null,
                 negocioOrigemId: n.id as string,
                 apoliceAnteriorId: (n.apolice_renovada_id as string | null) ?? null,
+                responsavelUsuarioId: (n.vendedor_usuario_id as string | null) ?? null,
                 bem: bemVazioParaRamo(n.ramo as string),
             });
         }
     }
 
-    return <ApoliceForm corretoraId={corretoraId} modo="criar" inicial={inicial} contatoInicial={contatoInicial} seguradoras={listaSeguradoras} ramos={ramos} />;
+    return <ApoliceForm corretoraId={corretoraId} modo="criar" inicial={inicial} contatoInicial={contatoInicial} seguradoras={listaSeguradoras} ramos={ramos} membros={await getMembrosAtivos(corretoraId)} />;
 }

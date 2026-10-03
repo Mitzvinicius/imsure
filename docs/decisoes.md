@@ -153,6 +153,25 @@ Spec completo: [`superpowers/specs/2026-10-02-base-seguros-design.md`](superpowe
 - **Vínculo bem ↔ apólice é manual** (decisão do Mitz), muitos-para-muitos (renovações e frotas), só ramos automóvel, residencial e empresarial. Ligar automaticamente pela placa/endereço ao cadastrar a apólice ficou para depois, se fizer sentido.
 - **Saúde em tabela própria** (`contato_saude`): é dado sensível pela LGPD e, quando houver equipe, vai ser preciso restringir quem vê. IMC calculado no código (faixas da OMS), não guardado.
 
+## Equipe, cargos e permissões
+
+Spec: [`superpowers/specs/2026-10-03-equipe-design.md`](superpowers/specs/2026-10-03-equipe-design.md).
+
+- **Limite de usuários por conta** (pessoa conta uma vez, mesmo em várias corretoras): Starter 2 · Pro 5 · Business 15, extra R$ 24,90. O extra ≈ custo por usuário dos planos, o que cria degrau natural (Starter + 2 extras ≈ Pro; Pro + 10 extras ≈ Business). Convite pendente conta; desativado não. Sem Stripe ainda: no limite, o convite é bloqueado (no banco, em `criar_convite`).
+- **Carteira por produto, não por cliente**: o mesmo cliente pode ter auto com um produtor e vida com outro. Produtor vê a própria carteira e **sabe, sem detalhes**, que o cliente tem produtos com colegas (evita oferta duplicada sem expor a carteira).
+- **Equipes opcionais** com líder (marcação, não cargo) e ramos atendidos — para corretoras divididas por ramo.
+- **5 cargos padrão** (Administrador, Gerente, Financeiro, Operacional, Produtor). Gerente e Financeiro **não veem saúde** (LGPD: só quem atua em sinistro/emissão de vida e o produtor do próprio cliente). Financeiro edita configurações e plano (o plano vale para a conta inteira).
+- **Cargos como dados** (`cargos` + `cargo_permissoes`) com escopo de visão: cargos personalizados (Pro/Business) viram só uma tela, sem reescrever RLS.
+- **Convite por link copiável** (7 dias, token só no link, banco guarda hash): não depende de envio de e-mail (limite baixo/spam do envio padrão).
+- Corrigiu de quebra o `selecionarPlano` (faltava policy de UPDATE em `contas`).
+
+## Contatos compartilhados na corretora
+
+Depois do teste com a segunda conta, o Mitz pediu que **todos vejam todos os contatos da corretora**, mas só os próprios negócios: sem isso o produtor cadastrava o cliente em duplicidade (ou batia no "CPF já cadastrado" sem conseguir achar o contato).
+- Fora da carteira: vê dados principais e o resumo "também tem com colegas"; **corrige só telefone e e-mail** (decisão do Mitz) — garantido por trigger no banco.
+- Financeiro, patrimônio, família e saúde continuam só para a carteira. Renda e patrimônio financeiro saíram de `contatos` para `contato_financeiro`, porque RLS não esconde colunas por linha.
+- Ao criar negócio/apólice com o contato, ele entra na carteira do produtor e a ficha completa libera.
+
 ## Pendências técnicas conhecidas
 
 1. **`contas` sem policy de `UPDATE`** — `selecionarPlano` está quebrado (RLS bloqueia a troca de plano, silenciosamente, sem erro visível). Precisa de uma policy tipo:

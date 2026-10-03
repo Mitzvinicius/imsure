@@ -41,10 +41,30 @@ export async function atualizarFichaContato({ contatoId, dados }: { contatoId: s
             tipo_pessoa: dados.tipoPessoa,
             data_nascimento: dados.dataNascimento,
             estado_civil: pf ? dados.estadoCivil : null,
-            renda_mensal: pf ? dados.rendaMensal : null,
-            patrimonio_financeiro: pf ? dados.patrimonioFinanceiro : null,
         })
         .eq("id", contatoId);
+    if (error) return { error: mensagemErro(error) };
+
+    // Financeiro fica em tabela própria (só a carteira enxerga)
+    const { data: contato } = await supabase.from("contatos").select("corretora_id").eq("id", contatoId).single();
+    if (contato && (pf || dados.rendaMensal != null || dados.patrimonioFinanceiro != null)) {
+        const { error: erroFin } = await supabase.from("contato_financeiro").upsert({
+            contato_id: contatoId,
+            corretora_id: contato.corretora_id,
+            renda_mensal: pf ? dados.rendaMensal : null,
+            patrimonio_financeiro: pf ? dados.patrimonioFinanceiro : null,
+            atualizado_em: new Date().toISOString(),
+        });
+        if (erroFin) return { error: mensagemErro(erroFin) };
+    }
+    return { error: null };
+}
+
+// Cliente da carteira de outro produtor: só telefone e e-mail podem ser corrigidos (o banco garante).
+export async function atualizarContatoBasico({ contatoId, telefone, email }: { contatoId: string; telefone: string | null; email: string | null }) {
+    if (email && !validarEmail(email)) return { error: "E-mail inválido." };
+    const supabase = await createClient();
+    const { error } = await supabase.from("contatos").update({ telefone, email }).eq("id", contatoId);
     return { error: error ? mensagemErro(error) : null };
 }
 

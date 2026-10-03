@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { caminhoSeguro } from '@/app/lib/equipe/permissoes';
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
@@ -32,6 +33,7 @@ function validEmail(v: string) {
 
 export default function AuthPage() {
     const router = useRouter();
+    const destino = caminhoSeguro(useSearchParams().get('next'));
     const [mode, setMode] = useState<Mode>('signin');
     const [toast, setToast] = useState<string | null>(null);
     const [errors, setErrors] = useState<Record<string, string>>({});
@@ -58,7 +60,7 @@ export default function AuthPage() {
             setErrors({ senha: result.error });
             return;
         }
-        router.push('/contas');
+        router.push(destino);
     }
 
     async function submitSignup(e: React.FormEvent) {
@@ -72,7 +74,7 @@ export default function AuthPage() {
         if (Object.keys(err).length > 0) return;
 
         setLoading(true);
-        const result = await createNewUser({ nome: su.nome, email: su.email, password: su.senha });
+        const result = await createNewUser({ nome: su.nome, email: su.email, password: su.senha, next: destino });
         setLoading(false);
 
         if (result.error) {
@@ -93,7 +95,7 @@ export default function AuthPage() {
         await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
-                redirectTo: `${window.location.origin}/auth/callback`,
+                redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(destino)}`,
             },
         });
     }

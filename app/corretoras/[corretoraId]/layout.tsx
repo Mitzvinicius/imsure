@@ -1,7 +1,8 @@
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
-import { getContasComCorretoras } from "@/app/lib/queries";
+import { getCorretorasDoUsuario } from "@/app/lib/queries";
+import { getMinhasPermissoes } from "@/app/lib/equipe/sessao";
+import { PermissoesProvider } from "@/app/ui/design/PermissoesContext";
 import Sidebar from "@/app/ui/design/Sidebar";
 import Box from "@mui/material/Box";
 
@@ -33,18 +34,23 @@ export default async function CorretoraLayout({
         redirect(`/onboarding/${corretoraId}`);
     }
 
-    const accounts = await getContasComCorretoras();
+    const [corretoras, permissoes] = await Promise.all([getCorretorasDoUsuario(), getMinhasPermissoes(corretoraId)]);
+    if (!permissoes) {
+        redirect("/contas");
+    }
 
     return (
-        <Box sx={{ display: "flex", minHeight: "100vh" }}>
-            <Sidebar
-                accounts={accounts}
-                currentCorretoraId={corretora.id}
-                currentCorretoraNome={corretora.nome}
-            />
-            <Box sx={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
-                {children}
+        <PermissoesProvider valor={permissoes}>
+            <Box sx={{ display: "flex", minHeight: "100vh" }}>
+                <Sidebar
+                    corretoras={corretoras}
+                    currentCorretoraId={corretora.id}
+                    currentCorretoraNome={corretora.nome}
+                />
+                <Box sx={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+                    {children}
+                </Box>
             </Box>
-        </Box>
+        </PermissoesProvider>
     );
 }
