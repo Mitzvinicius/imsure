@@ -28,6 +28,8 @@ CRM/ERP para corretoras de seguros, multi-tenant (uma conta pode ter múltiplas 
 | `/corretoras/[corretoraId]/funis` | `app/corretoras/[corretoraId]/funis/FunisPage.tsx` | Kanban/Lista de negócios do funil ativo da corretora |
 | `/corretoras/[corretoraId]/contatos` | `app/corretoras/[corretoraId]/contatos/ContatosPage.tsx` | Lista de contatos da corretora (lê do banco de verdade) |
 | `/corretoras/[corretoraId]/contatos/[contatoId]` (`?aba=`) | `contatos/[contatoId]/ContatoDetail.tsx` + `_components/Aba*.tsx` | Ficha do contato em abas: Principais, Financeiro (renda, patrimônio financeiro e lista de bens vinculáveis a apólices de auto/residencial/empresarial), Família (parentes até 2º grau, vínculo invertido automático) e Saúde (peso, altura, IMC) |
+| `/corretoras/[corretoraId]/equipe` (`?aba=`) | `equipe/EquipePage.tsx` | Membros (convite por link, cargo, desativar, transferir carteira, contador do plano), equipes com líder, cargos |
+| `/convite/[token]` | `app/convite/[token]/ConviteAceite.tsx` | Aceite de convite (login/cadastro com retorno via `?next=`) |
 | `/corretoras/[corretoraId]/apolices` (+ `nova`, `[apoliceId]`, `[apoliceId]/editar`) | `apolices/ApolicesPage.tsx`, `_components/ApoliceForm.tsx`, `[apoliceId]/ApoliceDetail.tsx` | Carteira: lista com filtros, cadastro (bem segurado por ramo, coberturas, parcelas), detalhe com abas Parcelas/Endossos/Sinistros/Anexos |
 | `/corretoras/[corretoraId]/sinistros` (+ `novo`, `[sinistroId]`) | `sinistros/SinistrosPage.tsx`, `novo/NovoSinistroForm.tsx`, `[sinistroId]/SinistroDetail.tsx` | Sinistros com status por ramo e histórico de andamentos |
 | `/corretoras/[corretoraId]/configuracoes` | `configuracoes/ConfiguracoesPage.tsx` | Dias de antecedência e etapa do funil da renovação automática |
@@ -38,6 +40,7 @@ CRM/ERP para corretoras de seguros, multi-tenant (uma conta pode ter múltiplas 
 
 ## Server Actions
 - `app/lib/actions.ts` — `criarConta`, `atualizarDadosCorretora`, `salvarRamosAtuacao`, `salvarFluxoVendas`, `selecionarPlano`, `concluirOnboarding`, `definirFunilAtivo`, `buscarContatos`, `criarNegocio`, `moverNegocio`, `atualizarNegocio`, `atualizarContato`, `deletarNegocio`, `marcarNegocioPerdido`, `reabrirNegocio`
+- `app/lib/actions-equipe.ts` — `convidarMembro`, `gerarNovoLinkConvite`, `cancelarConvite`, `aceitarConvite`, `alterarCargoMembro`, `alterarStatusMembro`, `transferirCarteira`, `salvarEquipe`, `excluirEquipe`
 - `app/lib/actions-contatos.ts` — `atualizarFichaContato`, `adicionarVinculo`, `removerVinculo`, `salvarBemPatrimonio`, `removerBemPatrimonio`, `vincularBemApolice`, `desvincularBemApolice`, `salvarSaude`
 - `app/lib/actions-seguros.ts` — `criarApolice`, `atualizarApolice`, `cancelarApolice`, `adicionarParcelas`, `atualizarParcela`, `darBaixaManual`, `criarEndosso`, `listarAnexosApolice`, `uploadAnexoApolice`, `deletarAnexoApolice`, `criarSinistro`, `atualizarSinistro`, `registrarAndamento`, `atualizarConfiguracoesCorretora`
 - Regras puras (testadas com Vitest) em `app/lib/seguros/`: ramos, datas, parcelas, status, sinistros, renovação, validação, mensagens de erro, tipos.
@@ -53,7 +56,7 @@ Família: `contato_vinculos` (corretora_id, contato_id, parente_id, parentesco) 
 
 Seguros: `corretoras` → `apolices` (cliente = `contato_id`, `seguradora_id` → `seguradoras`, lista **global**) → `endossos`, `parcelas` (da apólice ou de um endosso — a apólice **não** é "endosso 0"), `coberturas`, `bens_auto`/`bens_residencial`/`bens_rc`/`vidas_seguradas` → `beneficiarios`, `sinistros` → `sinistro_andamentos`, `apolice_anexos` (bucket privado `apolice-anexos`). Negócio tem `status` (aberto/ganho/perdido, com `motivo_perda`/`observacao_perda`): emitir apólice marca ganho e move para a etapa `etapas.emissao` (escolhida em Configurações); perdido é manual com motivo. Renovação: `negocios.apolice_renovada_id`, `etapas.renovacao`, `corretoras.dias_antecedencia_renovacao`, função `criar_negocios_renovacao()` agendada diariamente via `pg_cron`. Migrações versionadas em `supabase/migrations/` (aplicadas pelo MCP do Supabase) e testes SQL em `supabase/tests/` (rodar com `execute_sql`; desfazem tudo com `rollback`).
 
-RLS ativo em tudo. Modelo de autorização: **dono da `conta` controla tudo abaixo na hierarquia** (verificado via subquery `contas.owner_usuario_id = auth.uid()` em cada tabela filha, subindo a cadeia de FKs). `usuario_corretora` (multi-usuário por corretora) ainda não existe — hoje só o dono acessa; `negocios.vendedor_usuario_id` já existe pensando nisso (ver `docs/decisoes.md`). Tabelas de seguros usam as funções helper `usuario_possui_corretora(id)`/`usuario_possui_apolice(id)` (security definer, executáveis só por `authenticated`).
+RLS ativo em tudo. **Equipe**: membros via `usuario_corretora` (cargo por corretora; `cargos`/`cargo_permissoes`/catálogo `permissoes`; 5 cargos padrão criados por trigger em toda corretora, dono = Administrador). Funções definer: `usuario_possui_corretora` (membro ativo), `usuario_pode(corretora, permissao)`, `escopo_usuario`, `usuario_ve_responsavel`, `usuario_ve_contato`, `usuario_ve_negocio`, `usuario_possui_apolice`, `usuario_e_dono_conta`/`usuario_membro_conta` (evitam recursão contas↔corretoras). **Carteira por produto**: `negocios.vendedor_usuario_id` e `apolices.responsavel_usuario_id`; produtor vê só a própria carteira (líder de equipe vê a da equipe); troca de responsável e baixa de parcela barradas por trigger sem permissão. Convites por link (`criar_convite`/`aceitar_convite`/`info_convite`; limite do plano em `uso_usuarios_conta`). UI lê `minhas_permissoes` no layout → `usePermissoes()`.
 
 `contatos.cpf_cnpj` é um campo único (CPF **ou** CNPJ, detectado automaticamente pela quantidade de dígitos — vira `contatos.tipo_pessoa`), com constraint de unicidade por corretora.
 
@@ -91,7 +94,6 @@ Skills instaladas em `.claude/skills/` — carregadas automaticamente quando a t
 Conventional Commits (`feat:`, `fix:`, `chore:`, ...) — commits anteriores no histórico não seguem esse padrão ainda (foram feitos antes dessa convenção ser adotada), mas é o padrão a seguir daqui pra frente.
 
 ## Pendências / bugs conhecidos
-- `contas` não tem policy de `UPDATE` → `selecionarPlano` está quebrado (RLS bloqueia a troca de plano).
 - Tailwind não está de fato ativo (falta `@import "tailwindcss"` em algum CSS) — não afeta nada hoje, já que todas as páginas reais usam MUI.
 - **FSD**: reorganização das pastas em Feature-Sliced Design é intenção futura, ainda não aplicada — hoje o projeto segue a convenção padrão do App Router (`app/auth/`, `app/contas/`, `app/lib/`, `app/ui/design/`).
 - **Stripe**: integração de pagamento real é intenção futura, ver nota no Stack acima.
@@ -102,7 +104,8 @@ Conventional Commits (`feat:`, `fix:`, `chore:`, ...) — commits anteriores no 
 - `middleware.ts` da raiz: o Next 16 avisa que a convenção foi renomeada pra `proxy.ts` — só warning por enquanto.
 - **Seguradoras**: lista inicial sem telefones de assistência/sinistro nem código SUSEP — preencher com fonte oficial.
 - **Roadmap do portal do cliente** (ver `docs/superpowers/specs/2026-10-02-base-seguros-design.md`): etapa 1 (base de seguros) feita; faltam 1b baixa de comissão, 2 portal + PWA, 3 ações do cliente (aviso de sinistro/assistência), 4 comunicação (lembretes, renovação, promoções).
-- Ainda não existem: `usuario_corretora` (convite de equipe), `cargos`, enforcement de limites de plano na aplicação.
+- Equipe: faltam tela de cargos personalizados (Pro/Business), acesso global de sócios (Business), cobrança do usuário extra (Stripe), atribuição automática por ramo da equipe. Colunas financeiras de `contatos` (renda etc.) não têm controle por coluna — só importa quando existir cargo personalizado sem `contatos.financeiro.ver`.
+- Ainda não existem: enforcement dos demais limites de plano (corretoras, funis) na aplicação.
 
 ## Como o usuário gosta de trabalhar (importante)
 **Neste projeto, o Claude desenvolve o código e o usuário (Mitz) foca no produto.** Nada de método socrático, pseudocódigo ou "tenta escrever primeiro": implemente direto (features, correções, schema, infra), verifique que funciona e reporte o que foi feito. O papel do Mitz é decidir o quê e o porquê — requisitos, regras de negócio, prioridades, UX.
