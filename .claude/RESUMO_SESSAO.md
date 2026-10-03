@@ -8,12 +8,12 @@ O Claude desenvolve o código e o Mitz foca no produto (sem método socrático).
 ## Estado atual (branches e PRs)
 - `feat/base-seguros` → **PR #1** (base: `sandbox-dashboard`), aberto. Base de seguros, status ganho/perdido, filtros do funil, ficha do contato em abas.
 - `feat/equipe-tarefas` → **PR #2** (base: `feat/base-seguros`, empilhado), aberto. Equipe parte A: convites, cargos/permissões, equipes, carteira por produto, contatos compartilhados.
-- `feat/tarefas` → parte B (empilhada sobre `feat/equipe-tarefas`): tarefas ligadas a registros, conversa com @menções, notificações no sino em tempo real, lembretes às 7h, página Tarefas. Plano: `docs/superpowers/plans/2026-10-03-tarefas.md`.
+- `feat/tarefas` → **PR #3** (base: `feat/equipe-tarefas`, empilhado), aberto. Parte B (empilhada sobre `feat/equipe-tarefas`): tarefas ligadas a registros, conversa com @menções, notificações no sino em tempo real, lembretes às 7h, página Tarefas. Plano: `docs/superpowers/plans/2026-10-03-tarefas.md`.
 - Todas as migrações de `supabase/migrations/` estão **aplicadas** no Supabase (`bmovnppkcvpjeieyugdz`), inclusive `20261005120000_tarefas_base`, `20261005120050_tarefas_privilegios`, `20261005120100_tarefas_notificacoes`. Testes SQL em `supabase/tests/` (rodar com `execute_sql`; desfazem tudo).
 
 ## Próximo passo
-- Mitz testar a parte B ponta a ponta com a segunda conta (tarefa num sinistro atribuída ao produtor → sino dele acende; @menção; concluir). Depois abrir o PR de `feat/tarefas`.
-- Em seguida, o que o Mitz priorizar: roadmap do portal do cliente ou pendências abaixo.
+- Parte B testada pelo Mitz com as duas contas (sino em tempo real, @menção, concluir): funcionou. PR #3 (`feat/tarefas` → `feat/equipe-tarefas`) aberto. Ordem de merge: #1 → #2 → #3.
+- Em seguida, o que o Mitz priorizar: roadmap do portal do cliente ou as pendências abaixo (inclui os "minors" da revisão final das tarefas, listados no PR #3 e na conversa).
 
 ## Pendências registradas (menores)
 - Tarefas: remover `negocio_anotacoes`; canais e-mail/WhatsApp; tarefas recorrentes/automáticas (fora de escopo).
