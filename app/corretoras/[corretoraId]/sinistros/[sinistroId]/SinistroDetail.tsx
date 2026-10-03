@@ -23,6 +23,7 @@ import { tipoBemDoRamo } from "@/app/lib/seguros/ramos";
 import { formatData } from "@/app/lib/seguros/datas";
 import type { Andamento } from "@/app/lib/seguros/types";
 import AnexosApoliceTab from "../../apolices/_components/AnexosApoliceTab";
+import TarefasEConversa from "@/app/ui/tarefas/TarefasEConversa";
 
 type Sinistro = {
     id: string; data_ocorrencia: string; tipo: string; descricao: string | null;
@@ -121,6 +122,10 @@ export default function SinistroDetail({ corretoraId, sinistro, apolice, andamen
                         <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5 }}>Documentos</Typography>
                         <AnexosApoliceTab apoliceId={apolice.id} sinistroId={sinistro.id} andamentoId={ultimoAndamentoId} versao={versaoAnexos} />
                         <Button size="small" sx={{ mt: 1 }} onClick={() => setVersaoAnexos((v) => v + 1)}>Atualizar lista</Button>
+                    </Paper>
+                    <Paper variant="outlined" sx={{ p: 2.5 }}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5 }}>Tarefas e conversa</Typography>
+                        <TarefasEConversa corretoraId={corretoraId} vinculo={{ tipo: "sinistro", id: sinistro.id }} />
                     </Paper>
                 </Stack>
             </Stack>

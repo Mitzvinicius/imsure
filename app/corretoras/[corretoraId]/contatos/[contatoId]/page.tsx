@@ -7,7 +7,7 @@ import { hojeSaoPaulo } from "@/app/lib/seguros/datas";
 import ContatoDetail from "./ContatoDetail";
 import type { ApoliceResumo, BemComApolices, ContatoFicha } from "./tipos";
 
-const ABAS = ["principais", "financeiro", "familia", "saude"] as const;
+const ABAS = ["principais", "financeiro", "familia", "saude", "atividades"] as const;
 
 export default async function Page({
     params,

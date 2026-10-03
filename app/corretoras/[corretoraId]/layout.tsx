@@ -40,7 +40,7 @@ export default async function CorretoraLayout({
     }
 
     return (
-        <PermissoesProvider valor={permissoes}>
+        <PermissoesProvider valor={permissoes} usuarioId={user.id}>
             <Box sx={{ display: "flex", minHeight: "100vh" }}>
                 <Sidebar
                     corretoras={corretoras}

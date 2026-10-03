@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import Box from "@mui/material/Box";
+import Alert from "@mui/material/Alert";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
@@ -30,6 +31,7 @@ import FilterPanel from "./FilterPanel";
 import { contarFiltrosAtivos, FILTROS_PADRAO, negocioPassaNoFiltro, nomeCookieFiltros, type Filtros } from "./filtros";
 import { definirFunilAtivo, moverNegocio } from "@/app/lib/actions";
 import { Etapa, Fluxo, Negocio } from "./types";
+import { negocioDoLink, type DetalheNegocio } from "./link";
 import { formatBRL } from "./constants";
 
 export default function FunisPage({
@@ -41,6 +43,7 @@ export default function FunisPage({
     negociosIniciais,
     filtrosIniciais,
     membros,
+    negocioForaDoFunil,
 }: {
     corretoraId: string;
     corretoraNome: string;
@@ -51,6 +54,7 @@ export default function FunisPage({
     negociosIniciais: Negocio[];
     filtrosIniciais: Filtros;
     membros: { id: string; nome: string }[];
+    negocioForaDoFunil: DetalheNegocio | null;
 }) {
     const router = useRouter();
     const pathname = usePathname();
@@ -78,7 +82,7 @@ export default function FunisPage({
     const fluxoAtivo = fluxosIniciais.find((f) => f.ativo) ?? fluxosIniciais[0] ?? null;
 
     const negocioIdSelecionado = searchParams.get("negocio");
-    const negocioSelecionado = negocios.find((n) => n.id === negocioIdSelecionado) ?? null;
+    const { detalhe, naoEncontrado } = negocioDoLink(negocioIdSelecionado, negocios, etapasIniciais, negocioForaDoFunil);
 
     function abrirNegocio(id: string) {
         router.push(`${pathname}?negocio=${id}`);
@@ -108,11 +112,11 @@ export default function FunisPage({
         await moverNegocio({ negocioId, etapaId });
     }
 
-    if (negocioSelecionado) {
+    if (detalhe) {
         return (
             <DealDetail
-                negocio={negocioSelecionado}
-                etapas={etapasIniciais}
+                negocio={detalhe.negocio}
+                etapas={detalhe.etapas}
                 ramosAtuacao={ramosAtuacao}
                 corretoraNome={corretoraNome}
                 membros={membros}
@@ -125,6 +129,11 @@ export default function FunisPage({
 
     return (
         <Box sx={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+            {naoEncontrado && (
+                <Alert severity="warning" onClose={fecharDetalhe} sx={{ m: 2, mb: 0 }}>
+                    Negócio não encontrado: foi excluído ou você não tem acesso a ele.
+                </Alert>
+            )}
             <Stack
                 direction="row"
                 spacing={1.5}

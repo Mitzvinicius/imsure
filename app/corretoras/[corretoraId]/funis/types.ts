@@ -42,13 +42,6 @@ export type Negocio = {
     };
 };
 
-export type Anotacao = {
-    id: string;
-    texto: string;
-    usuario_nome: string;
-    criado_em: string;
-};
-
 export type HistoricoEntry = {
     id: string;
     campo: string;

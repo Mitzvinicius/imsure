@@ -15,6 +15,8 @@ import BadgeOutlinedIcon from "@mui/icons-material/BadgeOutlined";
 import AccountBalanceWalletOutlinedIcon from "@mui/icons-material/AccountBalanceWalletOutlined";
 import FamilyRestroomOutlinedIcon from "@mui/icons-material/FamilyRestroomOutlined";
 import FavoriteBorderOutlinedIcon from "@mui/icons-material/FavoriteBorderOutlined";
+import TaskAltOutlinedIcon from "@mui/icons-material/TaskAltOutlined";
+import TarefasEConversa from "@/app/ui/tarefas/TarefasEConversa";
 import { atualizarContatoBasico, atualizarFichaContato } from "@/app/lib/actions-contatos";
 import Alert from "@mui/material/Alert";
 import { usePermissoes } from "@/app/ui/design/PermissoesContext";
@@ -27,7 +29,7 @@ import AbaFamilia from "./_components/AbaFamilia";
 import AbaSaude from "./_components/AbaSaude";
 import type { ApoliceResumo, BemComApolices, ContatoFicha, Saude } from "./tipos";
 
-type Aba = "principais" | "financeiro" | "familia" | "saude";
+type Aba = "principais" | "financeiro" | "familia" | "saude" | "atividades";
 
 export default function ContatoDetail({
     corretoraId,
@@ -61,7 +63,8 @@ export default function ContatoDetail({
     const { pode } = usePermissoes();
     const veSaude = pode("contatos.saude.ver");
     const fichaCompleta = pf && emCarteira;
-    const [aba, setAba] = useState<Aba>(!fichaCompleta || (abaInicial === "saude" && !veSaude) ? "principais" : abaInicial);
+    const abaPermitida = (a: Aba) => a === "principais" || (a === "atividades" ? emCarteira : fichaCompleta && (a !== "saude" || veSaude));
+    const [aba, setAba] = useState<Aba>(abaPermitida(abaInicial) ? abaInicial : "principais");
 
     const set = (p: Partial<ContatoFicha>) => { setFicha((f) => ({ ...f, ...p })); setSalvo(false); };
 
@@ -118,6 +121,7 @@ export default function ContatoDetail({
                     {fichaCompleta && <Tab value="financeiro" label="Financeiro" icon={<AccountBalanceWalletOutlinedIcon fontSize="small" />} iconPosition="start" sx={{ minHeight: 52 }} />}
                     {fichaCompleta && <Tab value="familia" label={`Família${parentes.length ? ` (${parentes.length})` : ""}`} icon={<FamilyRestroomOutlinedIcon fontSize="small" />} iconPosition="start" sx={{ minHeight: 52 }} />}
                     {fichaCompleta && veSaude && <Tab value="saude" label="Saúde" icon={<FavoriteBorderOutlinedIcon fontSize="small" />} iconPosition="start" sx={{ minHeight: 52 }} />}
+                    {emCarteira && <Tab value="atividades" label="Tarefas e conversa" icon={<TaskAltOutlinedIcon fontSize="small" />} iconPosition="start" sx={{ minHeight: 52 }} />}
                 </Tabs>
 
                 <Box sx={{ p: 3 }}>
@@ -132,6 +136,7 @@ export default function ContatoDetail({
                     )}
                     {aba === "familia" && pf && <AbaFamilia corretoraId={corretoraId} contato={ficha} parentes={parentes} />}
                     {aba === "saude" && pf && veSaude && <AbaSaude corretoraId={corretoraId} contatoId={contato.id} saude={saude} />}
+                    {aba === "atividades" && emCarteira && <TarefasEConversa corretoraId={corretoraId} vinculo={{ tipo: "contato", id: contato.id }} />}
                 </Box>
             </Paper>
         </Box>
