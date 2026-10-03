@@ -140,6 +140,13 @@ Spec completo: [`superpowers/specs/2026-10-02-base-seguros-design.md`](superpowe
 - **Ganho é automático, perdido é manual**: emitir apólice marca o negócio como Ganho e o move para a etapa marcada como "de emissão" (`etapas.emissao`, mesmo esquema da renovação — por marcação, não por nome). Perdido exige motivo de uma lista fixa (`MOTIVOS_PERDA`) + observação opcional; "Arquivado" continua sendo só uma etapa. O funil padrão do onboarding ganhou "Seguro emitido".
 - **Máscara de dinheiro "da direita para a esquerda"** (como app de banco): digitar 123456 vira R$ 1.234,56. Evita de vez o bug de vírgula/centavos. Percentual igual, limitado a 100%.
 
+## Ficha do contato e vínculos familiares
+
+- **Todo parente é um contato da corretora** (vincular existente ou cadastrar novo com nome + telefone ou e-mail): o parente pode ter as próprias apólices e virar oportunidade de venda.
+- **Vínculo automático nos dois lados** (decisão do Mitz): grava-se uma linha só e o outro contato vê o grau inverso (filho ↔ pai/mãe, avô ↔ neto, sogro ↔ genro/nora, enteado ↔ padrasto/madrasta; cônjuge, irmão e cunhado são simétricos). Graus neutros em gênero ("Pai/Mãe") para não precisar de gênero do contato.
+- **Pessoa jurídica** mostra só as informações principais; estado civil, financeiro e família são de pessoa física (a action limpa esses campos se o contato virar PJ).
+- **Patrimônio imobilizado** = imóveis, veículos e outros bens; **financeiro** = investimentos e aplicações.
+
 ## Pendências técnicas conhecidas
 
 1. **`contas` sem policy de `UPDATE`** — `selecionarPlano` está quebrado (RLS bloqueia a troca de plano, silenciosamente, sem erro visível). Precisa de uma policy tipo:

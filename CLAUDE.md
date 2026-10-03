@@ -27,6 +27,7 @@ CRM/ERP para corretoras de seguros, multi-tenant (uma conta pode ter múltiplas 
 | `/onboarding/[corretoraId]` | `app/onboarding/[corretoraId]/OnboardingWizard.tsx` | Onboarding em 5 etapas, estilo Typeform (tela cheia, uma etapa por vez) |
 | `/corretoras/[corretoraId]/funis` | `app/corretoras/[corretoraId]/funis/FunisPage.tsx` | Kanban/Lista de negócios do funil ativo da corretora |
 | `/corretoras/[corretoraId]/contatos` | `app/corretoras/[corretoraId]/contatos/ContatosPage.tsx` | Lista de contatos da corretora (lê do banco de verdade) |
+| `/corretoras/[corretoraId]/contatos/[contatoId]` | `contatos/[contatoId]/ContatoDetail.tsx` | Ficha do contato: informações principais, financeiras e familiares (parentes até 2º grau, vínculo aparece invertido no outro contato) |
 | `/corretoras/[corretoraId]/apolices` (+ `nova`, `[apoliceId]`, `[apoliceId]/editar`) | `apolices/ApolicesPage.tsx`, `_components/ApoliceForm.tsx`, `[apoliceId]/ApoliceDetail.tsx` | Carteira: lista com filtros, cadastro (bem segurado por ramo, coberturas, parcelas), detalhe com abas Parcelas/Endossos/Sinistros/Anexos |
 | `/corretoras/[corretoraId]/sinistros` (+ `novo`, `[sinistroId]`) | `sinistros/SinistrosPage.tsx`, `novo/NovoSinistroForm.tsx`, `[sinistroId]/SinistroDetail.tsx` | Sinistros com status por ramo e histórico de andamentos |
 | `/corretoras/[corretoraId]/configuracoes` | `configuracoes/ConfiguracoesPage.tsx` | Dias de antecedência e etapa do funil da renovação automática |
@@ -37,6 +38,7 @@ CRM/ERP para corretoras de seguros, multi-tenant (uma conta pode ter múltiplas 
 
 ## Server Actions
 - `app/lib/actions.ts` — `criarConta`, `atualizarDadosCorretora`, `salvarRamosAtuacao`, `salvarFluxoVendas`, `selecionarPlano`, `concluirOnboarding`, `definirFunilAtivo`, `buscarContatos`, `criarNegocio`, `moverNegocio`, `atualizarNegocio`, `atualizarContato`, `deletarNegocio`, `marcarNegocioPerdido`, `reabrirNegocio`
+- `app/lib/actions-contatos.ts` — `atualizarFichaContato`, `adicionarVinculo`, `removerVinculo`
 - `app/lib/actions-seguros.ts` — `criarApolice`, `atualizarApolice`, `cancelarApolice`, `adicionarParcelas`, `atualizarParcela`, `darBaixaManual`, `criarEndosso`, `listarAnexosApolice`, `uploadAnexoApolice`, `deletarAnexoApolice`, `criarSinistro`, `atualizarSinistro`, `registrarAndamento`, `atualizarConfiguracoesCorretora`
 - Regras puras (testadas com Vitest) em `app/lib/seguros/`: ramos, datas, parcelas, status, sinistros, renovação, validação, mensagens de erro, tipos.
 - `app/auth/actions.ts` — `signIn`, `createNewUser`
@@ -44,6 +46,8 @@ CRM/ERP para corretoras de seguros, multi-tenant (uma conta pode ter múltiplas 
 
 ## Banco de dados (Supabase)
 Hierarquia: `planos` → `contas` (dono = `owner_usuario_id`) → `corretoras` → `fluxos` → `etapas` → `negocios`. `corretoras` também tem `contatos` (pessoas cadastradas) — `negocios.contato_id` referencia `contatos`, `negocios.vendedor_usuario_id` referencia `usuarios`. `usuarios` espelha `auth.users` (criado via trigger `handle_new_user`).
+
+Família: `contato_vinculos` (corretora_id, contato_id, parente_id, parentesco) grava o vínculo **uma vez** ("parente é X do contato"); o lado inverso é derivado em `app/lib/contatos/parentesco.ts` (`parentescoInverso`, `parentesDoContato`). Índice único no par (qualquer sentido) e FKs compostas `(id, corretora_id)` garantem mesma corretora.
 
 Seguros: `corretoras` → `apolices` (cliente = `contato_id`, `seguradora_id` → `seguradoras`, lista **global**) → `endossos`, `parcelas` (da apólice ou de um endosso — a apólice **não** é "endosso 0"), `coberturas`, `bens_auto`/`bens_residencial`/`bens_rc`/`vidas_seguradas` → `beneficiarios`, `sinistros` → `sinistro_andamentos`, `apolice_anexos` (bucket privado `apolice-anexos`). Negócio tem `status` (aberto/ganho/perdido, com `motivo_perda`/`observacao_perda`): emitir apólice marca ganho e move para a etapa `etapas.emissao` (escolhida em Configurações); perdido é manual com motivo. Renovação: `negocios.apolice_renovada_id`, `etapas.renovacao`, `corretoras.dias_antecedencia_renovacao`, função `criar_negocios_renovacao()` agendada diariamente via `pg_cron`. Migrações versionadas em `supabase/migrations/` (aplicadas pelo MCP do Supabase) e testes SQL em `supabase/tests/` (rodar com `execute_sql`; desfazem tudo com `rollback`).
 

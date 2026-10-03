@@ -41,10 +41,10 @@ export default function ContatoPicker({
                     <TextField label="Nome do cliente" required value={novoContato.nome} onChange={(e) => onNovoContato({ ...novoContato, nome: e.target.value })} sx={{ flex: 2 }} />
                     <TextField
                         label="CPF/CNPJ"
-                        value={formatCpfCnpj(novoContato.cpfCnpj ?? "").formatted}
+                        value={novoContato.cpfCnpj ?? ""}
                         onChange={(e) => {
-                            const d = e.target.value.replace(/\D/g, "").slice(0, 14);
-                            onNovoContato({ ...novoContato, cpfCnpj: d || null, tipoPessoa: d.length > 11 ? "juridica" : "fisica" });
+                            const { formatted, tipo } = formatCpfCnpj(e.target.value);
+                            onNovoContato({ ...novoContato, cpfCnpj: formatted || null, tipoPessoa: tipo });
                         }}
                         helperText={digitos ? (digitos.length > 11 ? "Pessoa jurídica" : "Pessoa física") : " "}
                         sx={{ flex: 1 }}
@@ -52,7 +52,7 @@ export default function ContatoPicker({
                 </Stack>
                 <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
                     <TextField label="E-mail" value={novoContato.email ?? ""} onChange={(e) => onNovoContato({ ...novoContato, email: e.target.value || null })} sx={{ flex: 1 }} />
-                    <TextField label="Telefone" value={formatTelefone(novoContato.telefone ?? "")} onChange={(e) => onNovoContato({ ...novoContato, telefone: e.target.value.replace(/\D/g, "").slice(0, 11) || null })} sx={{ flex: 1 }} />
+                    <TextField label="Telefone" value={novoContato.telefone ?? ""} onChange={(e) => onNovoContato({ ...novoContato, telefone: formatTelefone(e.target.value) || null })} sx={{ flex: 1 }} />
                 </Stack>
                 <Button size="small" sx={{ alignSelf: "flex-start" }} onClick={() => onNovoContato(null)}>Buscar contato existente</Button>
             </Stack>
