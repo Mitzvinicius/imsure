@@ -13,7 +13,7 @@ import Alert from "@mui/material/Alert";
 import Divider from "@mui/material/Divider";
 import Typography from "@mui/material/Typography";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
-import { atualizarTarefa, criarTarefa, excluirTarefa, membrosQueVeem } from "@/app/lib/actions-tarefas";
+import { atualizarTarefa, criarTarefa, excluirTarefa, membrosQueVeem, responsaveisPossiveis } from "@/app/lib/actions-tarefas";
 import { LABEL_PRIORIDADE, LABEL_STATUS_TAREFA, grupoPrazo, linkAlvo, validarTarefa } from "@/app/lib/tarefas/regras";
 import type { Alvo, DadosTarefa, Membro, Prioridade, RegistroBusca, StatusTarefa, TarefaLinha, Vinculo } from "@/app/lib/tarefas/tipos";
 import { hojeSaoPaulo } from "@/app/lib/seguros/datas";
@@ -56,19 +56,21 @@ export default function TarefaDialog({ corretoraId, tarefa, vinculoInicial, perm
     const vTipo = vinculo?.tipo ?? null;
     const vId = vinculo?.id ?? null;
 
+    const tarefaId = tarefa?.id ?? null;
     useEffect(() => {
         let ativo = true;
         const alvo: Alvo | null = vTipo && vId ? { tipo: vTipo, id: vId } : null;
-        membrosQueVeem({ corretoraId, alvo }).then((r) => {
+        // tarefa existente: pergunta pela tarefa (vale mesmo se quem edita perdeu acesso ao registro)
+        const busca = tarefaId ? responsaveisPossiveis({ tarefaId }) : membrosQueVeem({ corretoraId, alvo });
+        busca.then((r) => {
             if (!ativo) return;
             setMembros(r.membros);
             // tarefa nova: se o responsável escolhido não enxerga o registro novo, volta para quem está criando
             if (nova) setDados((d) => (r.membros.some((m) => m.id === d.responsavelId) ? d : { ...d, responsavelId: usuarioId }));
         });
         return () => { ativo = false; };
-    }, [corretoraId, vTipo, vId, usuarioId, nova]);
+    }, [corretoraId, vTipo, vId, usuarioId, nova, tarefaId]);
 
-    const tarefaId = tarefa?.id ?? null;
     useEffect(() => {
         if (!tarefaId) return;
         let ativo = true;

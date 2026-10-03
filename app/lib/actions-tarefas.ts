@@ -52,22 +52,24 @@ export async function atualizarTarefa({ tarefaId, dados }: { tarefaId: string; d
     const invalido = validarTarefa(dados);
     if (invalido) return { error: invalido };
     const supabase = await createClient();
-    const { data, error } = await supabase
-        .from("tarefas")
-        .update({ ...colunasDados(dados), status: dados.status })
-        .eq("id", tarefaId)
-        .select("id");
-    if (error) return { error: mensagem(error) };
-    if (!data?.length) return { error: "Você não pode editar esta tarefa." };
-    return { error: null };
+    // RPC (security definer): o responsável pode repassar a tarefa mesmo deixando de enxergá-la depois
+    const { error } = await supabase.rpc("atualizar_tarefa", {
+        p_tarefa_id: tarefaId,
+        p_titulo: dados.titulo,
+        p_descricao: dados.descricao,
+        p_responsavel: dados.responsavelId,
+        p_prazo: dados.prazo || null,
+        p_prazo_hora: dados.prazo ? (dados.prazoHora || null) : null,
+        p_prioridade: dados.prioridade,
+        p_status: dados.status,
+    });
+    return { error: error ? mensagem(error) : null };
 }
 
 export async function alterarStatusTarefa({ tarefaId, status }: { tarefaId: string; status: StatusTarefa }) {
     const supabase = await createClient();
-    const { data, error } = await supabase.from("tarefas").update({ status }).eq("id", tarefaId).select("id");
-    if (error) return { error: mensagem(error) };
-    if (!data?.length) return { error: "Você não pode alterar esta tarefa." };
-    return { error: null };
+    const { error } = await supabase.rpc("alterar_status_tarefa", { p_tarefa_id: tarefaId, p_status: status });
+    return { error: error ? mensagem(error) : null };
 }
 
 export async function excluirTarefa({ tarefaId }: { tarefaId: string }) {
@@ -121,6 +123,14 @@ export async function excluirComentario({ comentarioId }: { comentarioId: string
 export async function membrosQueVeem({ corretoraId, alvo }: { corretoraId: string; alvo: Alvo | null }) {
     const supabase = await createClient();
     const { data, error } = await supabase.rpc("membros_que_veem_registro", { p_corretora_id: corretoraId, ...paramsAlvo(alvo) });
+    if (error) return { error: mensagem(error), membros: [] as Membro[] };
+    return { error: null, membros: (data ?? []) as Membro[] };
+}
+
+/** Quem pode assumir uma tarefa existente (funciona mesmo se quem pergunta perdeu acesso ao registro). */
+export async function responsaveisPossiveis({ tarefaId }: { tarefaId: string }) {
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc("responsaveis_possiveis", { p_tarefa_id: tarefaId });
     if (error) return { error: mensagem(error), membros: [] as Membro[] };
     return { error: null, membros: (data ?? []) as Membro[] };
 }
