@@ -21,7 +21,7 @@ export default async function Page({
     if (!carregado || carregado.corretoraId !== corretoraId) notFound();
 
     const [{ data: extra }, { data: renovacao }, { data: parcelas }, { data: endossos }, { data: coberturasEndosso }, { data: sinistros }] = await Promise.all([
-        supabase.from("apolices").select("cancelada_em, seguradora:seguradoras(nome, telefone_assistencia, telefone_sinistro)").eq("id", apoliceId).single(),
+        supabase.from("apolices").select("cancelada_em, seguradora:seguradoras(nome, telefone_assistencia, telefone_sinistro), responsavel:usuarios!apolices_responsavel_usuario_id_fkey(nome)").eq("id", apoliceId).single(),
         supabase.from("apolices").select("id, numero").eq("apolice_anterior_id", apoliceId).maybeSingle(),
         supabase.from("parcelas").select("id, endosso_id, numero, vencimento, valor, comissao_esperada, status, baixa_origem, baixa_em, linha_digitavel, pix_copia_cola").eq("apolice_id", apoliceId).order("vencimento"),
         supabase.from("endossos").select("id, numero, tipo, data_emissao, descricao, valor").eq("apolice_id", apoliceId).order("criado_em"),
@@ -75,6 +75,7 @@ export default async function Page({
             coberturasEndosso={(coberturasEndosso ?? []) as Cobertura[]}
             sinistros={sinistrosLinhas}
             abaInicial={aba ?? "resumo"}
+            responsavelNome={(extra?.responsavel as unknown as { nome: string } | null)?.nome ?? "—"}
             bensPatrimonio={((bensVinculados ?? []) as unknown as { bem: { id: string; descricao: string; tipo: string } | null }[])
                 .map((l) => l.bem)
                 .filter((b): b is { id: string; descricao: string; tipo: string } => !!b)}

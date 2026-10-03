@@ -29,7 +29,7 @@ export default async function Page({
     if (!c) notFound();
 
     const pessoa = "id, nome, telefone, email";
-    const [{ data: vinculos }, { data: bens }, { data: apolices }, { data: saude }] = await Promise.all([
+    const [{ data: vinculos }, { data: bens }, { data: apolices }, { data: saude }, { data: produtos }] = await Promise.all([
         supabase
             .from("contato_vinculos")
             .select(`id, parentesco, contato:contatos!contato_vinculos_contato_fkey(${pessoa}), parente:contatos!contato_vinculos_parente_fkey(${pessoa})`)
@@ -45,6 +45,7 @@ export default async function Page({
             .eq("contato_id", contatoId)
             .order("fim_vigencia", { ascending: false }),
         supabase.from("contato_saude").select("peso_kg, altura_m, atualizado_em").eq("contato_id", contatoId).maybeSingle(),
+        supabase.rpc("produtos_do_contato_resumo", { p_contato_id: contatoId }),
     ]);
 
     const idsApolices = (apolices ?? []).map((a) => a.id as string);
@@ -109,6 +110,7 @@ export default async function Page({
                 alturaM: saude?.altura_m != null ? Number(saude.altura_m) : null,
                 atualizadoEm: (saude?.atualizado_em as string | undefined) ?? null,
             }}
+            produtosColegas={((produtos ?? []) as { tipo: string; ramo: string; situacao: string; responsavel_nome: string | null; meu: boolean }[]).filter((p) => !p.meu)}
             abaInicial={(ABAS as readonly string[]).includes(aba ?? "") ? (aba as (typeof ABAS)[number]) : "principais"}
         />
     );

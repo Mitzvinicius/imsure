@@ -19,6 +19,7 @@ import { LABEL_FORMA_PAGAMENTO, type ApoliceForm as ApoliceFormDados, type Conta
 import ContatoPicker from "./ContatoPicker";
 import BemSeguradoFields from "./BemSeguradoFields";
 import { bemVazioParaRamo } from "@/app/lib/seguros/bem";
+import { usePermissoes } from "@/app/ui/design/PermissoesContext";
 import CoberturasFields from "./CoberturasFields";
 import ParcelasFields from "./ParcelasFields";
 
@@ -39,6 +40,7 @@ export default function ApoliceForm({
     contatoInicial,
     seguradoras,
     ramos,
+    membros,
 }: {
     corretoraId: string;
     modo: "criar" | "editar";
@@ -47,6 +49,7 @@ export default function ApoliceForm({
     contatoInicial: ContatoResumo | null;
     seguradoras: Seguradora[];
     ramos: string[];
+    membros: { id: string; nome: string }[];
 }) {
     const router = useRouter();
     const [form, setForm] = useState<ApoliceFormDados>(inicial);
@@ -82,6 +85,7 @@ export default function ApoliceForm({
         }
     }
 
+    const { pode } = usePermissoes();
     const seguradoraSelecionada = seguradoras.find((s) => s.id === form.seguradoraId) ?? null;
     const opcoesRamo = form.ramo && !ramos.includes(form.ramo) ? [...ramos, form.ramo] : ramos;
 
@@ -103,6 +107,12 @@ export default function ApoliceForm({
 
                 <Secao titulo="Dados da apólice">
                     <Stack spacing={1.5}>
+                        {pode("carteira.transferir") && (
+                            <TextField select label="Responsável" value={form.responsavelUsuarioId ?? ""} onChange={(e) => set({ responsavelUsuarioId: e.target.value || null })}>
+                                <MenuItem value="">{modo === "criar" ? "Eu (ou o vendedor do negócio)" : "Manter o atual"}</MenuItem>
+                                {membros.map((m) => <MenuItem key={m.id} value={m.id}>{m.nome}</MenuItem>)}
+                            </TextField>
+                        )}
                         <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
                             <Autocomplete
                                 options={seguradoras}

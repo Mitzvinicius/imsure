@@ -40,6 +40,7 @@ export default function FunisPage({
     etapasIniciais,
     negociosIniciais,
     filtrosIniciais,
+    membros,
 }: {
     corretoraId: string;
     corretoraNome: string;
@@ -49,6 +50,7 @@ export default function FunisPage({
     etapasIniciais: Etapa[];
     negociosIniciais: Negocio[];
     filtrosIniciais: Filtros;
+    membros: { id: string; nome: string }[];
 }) {
     const router = useRouter();
     const pathname = usePathname();
@@ -113,6 +115,7 @@ export default function FunisPage({
                 etapas={etapasIniciais}
                 ramosAtuacao={ramosAtuacao}
                 corretoraNome={corretoraNome}
+                membros={membros}
                 onClose={fecharDetalhe}
                 onSaved={() => { fecharDetalhe(); router.refresh(); }}
                 onDeleted={() => { fecharDetalhe(); router.refresh(); }}

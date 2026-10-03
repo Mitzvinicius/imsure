@@ -447,6 +447,7 @@ export async function atualizarNegocio({
     valor,
     indicacao,
     fechadoEm,
+    vendedorUsuarioId,
 }: {
     negocioId: string;
     etapaId: string;
@@ -458,6 +459,7 @@ export async function atualizarNegocio({
     valor: number | null;
     indicacao: boolean;
     fechadoEm: string | null;
+    vendedorUsuarioId?: string;
 }) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -500,6 +502,29 @@ export async function atualizarNegocio({
             atual as RegistroNegocioEditavel,
             { etapa_id: etapaId, tipo, ramo, seguradora, origem, grupo_producao: grupoProducao, valor, indicacao, fechado_em: fechadoEm },
         );
+    }
+
+    if (vendedorUsuarioId) {
+        const { data: v } = await supabase
+            .from("negocios")
+            .select("vendedor_usuario_id, vendedor:usuarios(nome)")
+            .eq("id", negocioId)
+            .single();
+        if (v && v.vendedor_usuario_id !== vendedorUsuarioId) {
+            const { error: erroVendedor } = await supabase.from("negocios").update({ vendedor_usuario_id: vendedorUsuarioId }).eq("id", negocioId);
+            if (erroVendedor) {
+                return { error: erroVendedor.code === "42501" ? "Você não tem permissão para trocar o vendedor." : erroVendedor.message };
+            }
+            const { data: novo } = await supabase.from("usuarios").select("nome").eq("id", vendedorUsuarioId).single();
+            await supabase.from("negocio_historico").insert({
+                negocio_id: negocioId,
+                usuario_id: user.id,
+                usuario_nome: (user.user_metadata?.nome as string | undefined) ?? user.email ?? "Você",
+                campo: "Vendedor",
+                valor_anterior: (v.vendedor as unknown as { nome: string } | null)?.nome ?? null,
+                valor_novo: (novo?.nome as string | undefined) ?? null,
+            });
+        }
     }
 
     return { error: null };

@@ -15,6 +15,7 @@ const formOk: ApoliceForm = {
     formaPagamento: "boleto",
     negocioOrigemId: null,
     apoliceAnteriorId: null,
+    responsavelUsuarioId: null,
     bem: { tipo: "auto", itens: [{ placa: "ABC1D23", chassi: "", marca: "Honda", modelo: "Civic", ano_fabricacao: 2022, ano_modelo: 2022, cep_pernoite: "" }] },
     coberturas: [{ nome: "Casco", importancia_segurada: 100000, franquia: 3500 }],
     parcelas: [{ numero: 1, vencimento: "2026-01-10", valor: 1200, comissao_esperada: 180, linha_digitavel: null, pix_copia_cola: null }],

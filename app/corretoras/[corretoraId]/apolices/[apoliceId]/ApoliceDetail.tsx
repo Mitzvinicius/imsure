@@ -58,6 +58,7 @@ export default function ApoliceDetail(props: {
     sinistros: SinistroLinha[];
     abaInicial: string;
     bensPatrimonio: { id: string; descricao: string; tipo: string }[];
+    responsavelNome: string;
 }) {
     const { corretoraId, apoliceId, form } = props;
     const router = useRouter();
@@ -102,6 +103,7 @@ export default function ApoliceDetail(props: {
                     <Stack spacing={2}>
                         <Stack direction="row" spacing={3} sx={{ flexWrap: "wrap", rowGap: 2 }}>
                             <Campo rotulo="Cliente" valor={props.contato.nome} />
+                            <Campo rotulo="Responsável" valor={props.responsavelNome} />
                             <Campo rotulo="Ramo" valor={form.ramo} />
                             <Campo rotulo="Vigência" valor={`${formatData(form.inicioVigencia)} – ${formatData(form.fimVigencia)}`} />
                             <Campo rotulo="Prêmio" valor={form.premio != null ? formatBRL(form.premio) : "—"} />

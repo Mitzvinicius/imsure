@@ -20,6 +20,7 @@ import DeleteOutlineIcon from "@mui/icons-material/DeleteOutlined";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import { atualizarNegocio, atualizarContato, deletarNegocio, marcarNegocioPerdido, reabrirNegocio } from "@/app/lib/actions";
 import { MOTIVOS_PERDA } from "@/app/lib/seguros/etapas";
+import { usePermissoes } from "@/app/ui/design/PermissoesContext";
 import Dialog from "@mui/material/Dialog";
 import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
@@ -43,6 +44,7 @@ export default function DealDetail({
     etapas,
     ramosAtuacao,
     corretoraNome,
+    membros,
     onClose,
     onSaved,
     onDeleted,
@@ -51,11 +53,14 @@ export default function DealDetail({
     etapas: Etapa[];
     ramosAtuacao: string[];
     corretoraNome: string;
+    membros: { id: string; nome: string }[];
     onClose: () => void;
     onSaved: () => void;
     onDeleted: () => void;
 }) {
     const router = useRouter();
+    const { pode } = usePermissoes();
+    const [vendedorId, setVendedorId] = useState(negocio.vendedor.id);
     const { corretoraId } = useParams<{ corretoraId: string }>();
     const [perdaAberta, setPerdaAberta] = useState(false);
     const [motivoPerda, setMotivoPerda] = useState("");
@@ -142,6 +147,7 @@ export default function DealDetail({
                 valor,
                 indicacao,
                 fechadoEm: fechadoEm || null,
+                vendedorUsuarioId: vendedorId !== negocio.vendedor.id ? vendedorId : undefined,
             }),
         ]);
         setSalvando(false);
@@ -271,7 +277,13 @@ export default function DealDetail({
                             </TextField>
                             <CampoMoeda label="Prêmio bruto" valor={valor} onValor={setValor} />
                             <TextField label="Data de fechamento" type="date" value={fechadoEm} onChange={(e) => setFechadoEm(e.target.value)} slotProps={{ inputLabel: { shrink: true } }} />
-                            <TextField label="Vendedor responsável" value={negocio.vendedor.nome} disabled />
+                            {pode("carteira.transferir") ? (
+                                <TextField select label="Vendedor responsável" value={vendedorId} onChange={(e) => setVendedorId(e.target.value)}>
+                                    {membros.map((m) => <MenuItem key={m.id} value={m.id}>{m.nome}</MenuItem>)}
+                                </TextField>
+                            ) : (
+                                <TextField label="Vendedor responsável" value={negocio.vendedor.nome} disabled />
+                            )}
                             <TextField select label="Origem do cliente" value={origem} onChange={(e) => setOrigem(e.target.value)}>
                                 <MenuItem value="">—</MenuItem>
                                 {ORIGENS.map((o) => <MenuItem key={o} value={o}>{o}</MenuItem>)}
@@ -296,9 +308,11 @@ export default function DealDetail({
                         <Button size="small" color="error" variant="contained" disabled={salvando} onClick={excluir}>Confirmar</Button>
                     </Stack>
                 ) : (
-                    <Button color="error" startIcon={<DeleteOutlineIcon />} onClick={() => setConfirmandoExclusao(true)}>
-                        Deletar negócio
-                    </Button>
+                    pode("negocios.excluir") ? (
+                        <Button color="error" startIcon={<DeleteOutlineIcon />} onClick={() => setConfirmandoExclusao(true)}>
+                            Deletar negócio
+                        </Button>
+                    ) : <span />
                 )}
                 <Stack direction="row" spacing={1.5}>
                     <Button onClick={onClose} color="inherit">Fechar</Button>
