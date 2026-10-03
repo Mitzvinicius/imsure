@@ -1,8 +1,8 @@
 begin;
-insert into auth.users (id, email, aud, role, raw_user_meta_data) values
-  ('00000000-0000-0000-0000-00000000c0a0','cv-dono@teste.local','authenticated','authenticated','{"nome":"Dono"}'),
-  ('00000000-0000-0000-0000-00000000c0b0','cv-novo@teste.local','authenticated','authenticated','{"nome":"Novo"}'),
-  ('00000000-0000-0000-0000-00000000c0c0','cv-outro@teste.local','authenticated','authenticated','{"nome":"Outro"}');
+insert into auth.users (id, email, aud, role, raw_user_meta_data, email_confirmed_at) values
+  ('00000000-0000-0000-0000-00000000c0a0','cv-dono@teste.local','authenticated','authenticated','{"nome":"Dono"}', now()),
+  ('00000000-0000-0000-0000-00000000c0b0','cv-novo@teste.local','authenticated','authenticated','{"nome":"Novo"}', now()),
+  ('00000000-0000-0000-0000-00000000c0c0','cv-outro@teste.local','authenticated','authenticated','{"nome":"Outro"}', now());
 insert into public.contas (id, nome, plano_id, owner_usuario_id)
 select '00000000-0000-0000-0000-00000000cc00','Conta Starter',(select id from public.planos where nome='Starter'),'00000000-0000-0000-0000-00000000c0a0';
 insert into public.corretoras (id, conta_id, nome, onboarding_concluido) values
