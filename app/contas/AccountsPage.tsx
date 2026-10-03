@@ -36,6 +36,8 @@ type Account = {
     nome: string;
     logo: string | null;
     papel: 'owner' | 'guest';
+    contaNome: string;
+    cargo: string;
     corretoraId: string | null;
     onboardingConcluido: boolean;
 };
@@ -56,14 +58,14 @@ function AccountCard({ acc, onOpen }: { acc: Account; onOpen: (acc: Account) => 
                     <AccountLogo nome={acc.nome} logo={acc.logo} />
                     <Box sx={{ minWidth: 0 }}>
                         <Typography noWrap sx={{ fontWeight: 800, fontSize: 15.5 }}>{acc.nome}</Typography>
-                        <Typography noWrap variant="caption" color="text.secondary">ID {acc.id.slice(0, 8)}</Typography>
+                        <Typography noWrap variant="caption" color="text.secondary">{acc.contaNome !== acc.nome ? acc.contaNome : `ID ${acc.id.slice(0, 8)}`}</Typography>
                     </Box>
                 </Stack>
                 <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between', pt: 1.5, borderTop: '1px solid', borderColor: 'divider' }}>
                     <Chip
                         size="medium"
                         icon={acc.papel === 'owner' ? <WorkOutlineIcon /> : <GroupsOutlinedIcon />}
-                        label={acc.papel === 'owner' ? 'Proprietário' : 'Convidado'}
+                        label={acc.papel === 'owner' ? 'Proprietário' : acc.cargo}
                         color={acc.papel === 'owner' ? 'secondary' : 'default'}
                         variant={acc.papel === 'owner' ? 'filled' : 'outlined'}
                     />

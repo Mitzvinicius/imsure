@@ -22,24 +22,28 @@ import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import LightModeIcon from '@mui/icons-material/LightMode';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LogoutIcon from '@mui/icons-material/Logout';
-import type { ContaComCorretora } from '@/app/lib/queries';
+import type { CorretoraDoUsuario } from '@/app/lib/queries';
+import type { Permissao } from '@/app/lib/equipe/permissoes';
+import { usePermissoes } from './PermissoesContext';
+import GroupsOutlinedIcon from '@mui/icons-material/GroupsOutlined';
 import { useColorMode } from './ThemeRegistry';
 import { createClient } from '@/utils/supabase/client';
 
-const NAV_ITEMS = [
+const NAV_ITEMS: { href: string; label: string; icon: typeof ViewKanbanOutlinedIcon; requer?: Permissao[] }[] = [
     { href: 'funis', label: 'Funis', icon: ViewKanbanOutlinedIcon },
     { href: 'contatos', label: 'Contatos', icon: PeopleOutlinedIcon },
     { href: 'apolices', label: 'Apólices', icon: DescriptionOutlinedIcon },
     { href: 'sinistros', label: 'Sinistros', icon: ReportProblemOutlinedIcon },
-    { href: 'configuracoes', label: 'Configurações', icon: SettingsOutlinedIcon },
+    { href: 'equipe', label: 'Equipe', icon: GroupsOutlinedIcon, requer: ['equipe.membros', 'equipe.equipes'] },
+    { href: 'configuracoes', label: 'Configurações', icon: SettingsOutlinedIcon, requer: ['configuracoes.editar'] },
 ];
 
 export default function Sidebar({
-    accounts,
+    corretoras,
     currentCorretoraId,
     currentCorretoraNome,
 }: {
-    accounts: ContaComCorretora[];
+    corretoras: CorretoraDoUsuario[];
     currentCorretoraId: string;
     currentCorretoraNome: string;
 }) {
@@ -48,14 +52,16 @@ export default function Sidebar({
     const { mode, toggle } = useColorMode();
     const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
 
-    function switchAccount(conta: ContaComCorretora) {
+    const { pode } = usePermissoes();
+    const itens = NAV_ITEMS.filter((i) => !i.requer || i.requer.some(pode));
+
+    function trocarCorretora(c: CorretoraDoUsuario) {
         setAnchorEl(null);
-        if (!conta.corretoraId) return;
-        if (!conta.onboardingConcluido) {
-            router.push(`/onboarding/${conta.corretoraId}`);
+        if (!c.onboardingConcluido) {
+            router.push(`/onboarding/${c.corretoraId}`);
             return;
         }
-        router.push(`/corretoras/${conta.corretoraId}/funis`);
+        router.push(`/corretoras/${c.corretoraId}/funis`);
     }
 
     async function handleLogout() {
@@ -110,13 +116,9 @@ export default function Sidebar({
                     <ExpandMoreIcon sx={{ fontSize: 18, opacity: 0.7 }} />
                 </Button>
                 <Menu anchorEl={anchorEl} open={!!anchorEl} onClose={() => setAnchorEl(null)}>
-                    {accounts.map((conta) => (
-                        <MenuItem
-                            key={conta.id}
-                            selected={conta.corretoraId === currentCorretoraId}
-                            onClick={() => switchAccount(conta)}
-                        >
-                            {conta.corretoraNome}
+                    {corretoras.map((c) => (
+                        <MenuItem key={c.corretoraId} selected={c.corretoraId === currentCorretoraId} onClick={() => trocarCorretora(c)}>
+                            <ListItemText primary={c.corretoraNome} secondary={`${c.contaNome} · ${c.cargo}`} />
                         </MenuItem>
                     ))}
                     <Divider />
@@ -127,7 +129,7 @@ export default function Sidebar({
             </Box>
 
             <Stack component="nav" spacing={0.25} sx={{ flex: 1, px: 1.5, overflowY: 'auto' }}>
-                {NAV_ITEMS.map(({ href, label, icon: ItemIcon }) => {
+                {itens.map(({ href, label, icon: ItemIcon }) => {
                     const active = pathname?.endsWith(`/${href}`);
                     return (
                         <Button
