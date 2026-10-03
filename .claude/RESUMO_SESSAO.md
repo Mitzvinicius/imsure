@@ -1,33 +1,28 @@
-# Resumo da sessão — imsure
+# Resumo da sessão — imsure (atualizado em 2026-10-03)
 
-> Sessão muito longa, contexto foi limpo pra economizar tokens. Este arquivo é o resumo do que foi feito; os detalhes "vivos" do projeto (que continuam sendo atualizados daqui pra frente) estão em [`CLAUDE.md`](../CLAUDE.md) e [`docs/decisoes.md`](../docs/decisoes.md) — leia os dois primeiro, este arquivo é só a narrativa de como chegamos até aqui.
+> Leia primeiro o [`CLAUDE.md`](../CLAUDE.md) (mapa) e o [`docs/decisoes.md`](../docs/decisoes.md) (porquês). Este arquivo diz **onde paramos e o que vem a seguir**.
 
-## O que essa sessão cobriu, em ordem
+## Modo de trabalho
+O Claude desenvolve o código e o Mitz foca no produto (sem método socrático). Fluxo usado: brainstorming (perguntas uma por vez → spec aprovada) → plano em `docs/superpowers/plans/` → execução inline com TDD + revisão final independente → PR.
 
-1. **Resolveu confusão inicial de npm/pnpm misturados** no projeto (sobrou de teste, ficou como está, sem problema).
-2. **Integração com Supabase do zero**: `@supabase/supabase-js` + `@supabase/ssr`, clientes de browser/server/middleware, `.env.local`, PKCE.
-3. **Feature de contatos com MUI DataGrid** — ensinada de forma socrática (o usuário está aprendendo a programar, vem do Bubble), com bastante idas e vindas em sintaxe de TS/React (desestruturação, arrow functions, tipos).
-4. **Revisão do schema real do Supabase** contra um documento de arquitetura que o usuário tinha de outra sessão (`contas` → `corretoras`, planos, RLS) — achamos e corrigimos bugs reais: `handle_new_user()` apontando pra tabelas erradas, `corretoras` sem nenhuma policy de RLS.
-5. **Server Action `criarConta`** — ensinada socraticamente, virou o padrão `{ error }` usado em todas as actions depois.
-6. **Autenticação completa**: PKCE, Google OAuth, tela de login/cadastro.
-7. **Onboarding em 5 etapas** (estratégia de *sunk cost*, pedida explicitamente pelo usuário) — dados da corretora, ramos de atuação, funil de vendas, escolha de plano (Starter/Pro/Business, sem cobrança real), revisão.
-8. **Migração de todo o design system pra MUI** — decisão explícita do usuário de usar MUI em tudo (ícones e componentes), incluindo reescrever retroativamente telas que já estavam prontas (login, contas) que tinham sido feitas com CSS/ícones à mão a partir de protótipos do Claude Design.
-9. **Feature de Funis/Negócios** (Kanban + Lista), a partir de outro protótipo do Claude Design — com tabela `negocios` real, `contatos` migrado do mock pro banco, Sidebar com seletor de conta, filtros avançados, detalhe do negócio como state de página (URL params, não modal) com edição inline do contato.
-10. **CPF/CNPJ unificado num campo só** com detecção automática de pessoa física/jurídica, máscaras de telefone/CPF/CNPJ, validação de e-mail, e constraint de unicidade no banco — depois de um bug relatado onde texto sem filtro (parecia ditado por voz) ia direto pro campo.
-11. **Revisão de segurança** (RLS, Server Actions, guards de página) — sem brechas encontradas de um usuário acessar dados de outro.
+## Estado atual (branches e PRs)
+- `feat/base-seguros` → **PR #1** (base: `sandbox-dashboard`), aberto. Base de seguros (apólices, endossos, parcelas, sinistros, renovação), status ganho/perdido, filtros do funil, máscaras, ficha do contato em abas (patrimônio, família, saúde).
+- `feat/equipe-tarefas` → **PR #2** (base: `feat/base-seguros`, empilhado), aberto. Equipe parte A: convites por link, cargos/permissões, equipes, carteira por produto, limite de usuários por plano, contatos compartilhados na corretora.
+- Todas as migrações de `supabase/migrations/` já estão **aplicadas** no Supabase (`bmovnppkcvpjeieyugdz`). Testes SQL em `supabase/tests/` (rodar com `execute_sql`; desfazem tudo).
+- O Mitz testou ponta a ponta com uma segunda conta (produtor) e funcionou.
 
-## Estado do banco (Supabase, projeto `imsure`, ref `bmovnppkcvpjeieyugdz`)
+## Próximo passo
+**Parte B do módulo de equipe: tarefas, conversa interna (@menções) e notificações.**
+- Spec aprovada: `docs/superpowers/specs/2026-10-03-tarefas-design.md`.
+- Falta: montar o plano de implementação (skill writing-plans) e executar. Trabalhar numa branch nova a partir de `feat/equipe-tarefas` (ex.: `feat/tarefas`).
+- Decisões já tomadas: tarefas ligadas a negócio/apólice/sinistro/contato (ou avulsas); comentários com @menção em cada registro; notificações só dentro do app (sino em tempo real via Supabase Realtime + "Minhas tarefas"); lembretes diários às 7h via `pg_cron`; anotações do negócio migram para comentários; responsável e menção só para quem enxerga o registro.
 
-Tabelas: `planos`, `contas`, `corretoras`, `usuarios`, `fluxos`, `etapas`, `contatos`, `negocios`. RLS ativo em tudo, todas com policy exceto `usuarios` (proposital, só a trigger interna escreve nela, exceto a policy nova que libera ver o vendedor de negócios que você possui).
+## Pendências registradas (menores)
+- Baixa de parcela via INSERT com status pago sem permissão; responsável de apólice via negócio de outra corretora; `uso_usuarios_conta` legível por qualquer logado; mensagem de limite sem separar convites pendentes; renovação para responsável desativado; desempenho (policies permissivas múltiplas, FKs sem índice).
+- Da etapa de seguros: datas de timestamp mostradas em UTC após 21h; confirmação ao cancelar apólice; stepper do sinistro "negado"; telefones/SUSEP das seguradoras vazios; dígito verificador de CPF/CNPJ.
+- Roadmap do portal do cliente: 1b baixa de comissão, 2 portal + PWA, 3 ações do cliente, 4 comunicação (ver spec `2026-10-02-base-seguros-design.md`).
 
-## O que fazer primeiro numa sessão nova
-
-1. Ler `CLAUDE.md` (mapa) e `docs/decisoes.md` (porquês) — cobrem tudo listado acima em detalhe.
-2. Se for mexer no front, checar se o dev server está rodando (`npm run dev`) — se der erro estranho tipo "Jest worker encountered N child process exceptions", é só cache do Turbopack: `rm -rf .next` e reiniciar.
-3. Pendências mais visíveis: `selecionarPlano` quebrado (falta policy de UPDATE em `contas`), validação de dígito verificador de CPF/CNPJ ainda não implementada (usuário foi perguntado, sem resposta), filtro "cotação válida até" do protótipo de funis não implementado.
-
-## Como o usuário gosta de trabalhar
-
-> Atualizado (out/2026): o método socrático foi abandonado neste projeto — o Claude desenvolve o código e o usuário foca no produto. Ver `CLAUDE.md`.
-
-Vem do Bubble (forte em lógica/modelagem relacional). Fica à vontade fazendo perguntas de arquitetura/produto abertas ("me dá sua opinião", "faça mais perguntas se precisar") — vale responder com recomendação clara + trade-off, não só listar opções.
+## Dicas de ambiente
+- `pnpm` via `npx -y pnpm@10 ...`; preview `imsure-dev` em `.claude/launch.json`.
+- Não rodar `pnpm build` com o dev server ligado (derruba o preview); usar `npx tsc --noEmit -p .`.
+- Supabase free pausa após ~7 dias sem uso.
