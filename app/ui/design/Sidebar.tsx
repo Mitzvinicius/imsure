@@ -29,6 +29,7 @@ import GroupsOutlinedIcon from '@mui/icons-material/GroupsOutlined';
 import TaskAltOutlinedIcon from '@mui/icons-material/TaskAltOutlined';
 import { useColorMode } from './ThemeRegistry';
 import { createClient } from '@/utils/supabase/client';
+import SinoNotificacoes from '@/app/ui/tarefas/SinoNotificacoes';
 
 const NAV_ITEMS: { href: string; label: string; icon: typeof ViewKanbanOutlinedIcon; requer?: Permissao[] }[] = [
     { href: 'funis', label: 'Funis', icon: ViewKanbanOutlinedIcon },
@@ -91,6 +92,8 @@ export default function Sidebar({
             <Stack direction="row" spacing={1} sx={{ alignItems: 'center', px: 2.5, py: 2.5 }}>
                 <CloudOutlinedIcon sx={{ color: 'secondary.main' }} />
                 <Typography sx={{ fontWeight: 800, fontSize: 22, letterSpacing: '-0.02em' }}>imsure</Typography>
+                <Box sx={{ flex: 1 }} />
+                <SinoNotificacoes />
             </Stack>
 
             <Box sx={{ px: 2, pb: 1.5 }}>
