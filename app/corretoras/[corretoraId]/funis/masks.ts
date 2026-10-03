@@ -93,3 +93,17 @@ export function formatPercentual(valor: number | null): string {
     if (valor == null) return "";
     return centavosParaTexto(Math.round(valor * 100));
 }
+
+// Decimal genérico "da direita para a esquerda" (peso, altura...): `casas` decimais, até `maxDigitos` dígitos.
+export function mascaraDecimal(texto: string, casas: number, maxDigitos: number): { texto: string; valor: number | null } {
+    const digitos = apenasDigitos(texto).replace(/^0+/, "").slice(0, maxDigitos);
+    const n = Number(digitos || "0");
+    if (n === 0) return { texto: "", valor: null };
+    const valor = n / 10 ** casas;
+    return { texto: formatDecimal(valor, casas), valor };
+}
+
+export function formatDecimal(valor: number | null, casas: number): string {
+    if (valor == null) return "";
+    return valor.toFixed(casas).replace(".", ",");
+}

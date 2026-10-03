@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatCpf, formatMoeda, formatPercentual, mascaraMoeda, mascaraPercentual } from "./masks";
+import { formatCpf, formatDecimal, formatMoeda, formatPercentual, mascaraDecimal, mascaraMoeda, mascaraPercentual } from "./masks";
 
 describe("mascaraMoeda", () => {
     it("preenche da direita para a esquerda", () => {
@@ -52,5 +52,22 @@ describe("formatCpf", () => {
     it("aplica máscara e corta em 11 dígitos", () => {
         expect(formatCpf("12345678901234")).toBe("123.456.789-01");
         expect(formatCpf("1234")).toBe("123.4");
+    });
+});
+
+describe("mascaraDecimal", () => {
+    it("peso com uma casa", () => {
+        expect(mascaraDecimal("725", 1, 4)).toEqual({ texto: "72,5", valor: 72.5 });
+    });
+    it("altura com duas casas", () => {
+        expect(mascaraDecimal("175", 2, 3)).toEqual({ texto: "1,75", valor: 1.75 });
+        expect(mascaraDecimal("1758", 2, 3)).toEqual({ texto: "1,75", valor: 1.75 });
+    });
+    it("vazio", () => {
+        expect(mascaraDecimal("", 1, 4)).toEqual({ texto: "", valor: null });
+    });
+    it("formatDecimal", () => {
+        expect(formatDecimal(1.8, 2)).toBe("1,80");
+        expect(formatDecimal(null, 1)).toBe("");
     });
 });

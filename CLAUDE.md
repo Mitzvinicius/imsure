@@ -27,7 +27,7 @@ CRM/ERP para corretoras de seguros, multi-tenant (uma conta pode ter múltiplas 
 | `/onboarding/[corretoraId]` | `app/onboarding/[corretoraId]/OnboardingWizard.tsx` | Onboarding em 5 etapas, estilo Typeform (tela cheia, uma etapa por vez) |
 | `/corretoras/[corretoraId]/funis` | `app/corretoras/[corretoraId]/funis/FunisPage.tsx` | Kanban/Lista de negócios do funil ativo da corretora |
 | `/corretoras/[corretoraId]/contatos` | `app/corretoras/[corretoraId]/contatos/ContatosPage.tsx` | Lista de contatos da corretora (lê do banco de verdade) |
-| `/corretoras/[corretoraId]/contatos/[contatoId]` | `contatos/[contatoId]/ContatoDetail.tsx` | Ficha do contato: informações principais, financeiras e familiares (parentes até 2º grau, vínculo aparece invertido no outro contato) |
+| `/corretoras/[corretoraId]/contatos/[contatoId]` (`?aba=`) | `contatos/[contatoId]/ContatoDetail.tsx` + `_components/Aba*.tsx` | Ficha do contato em abas: Principais, Financeiro (renda, patrimônio financeiro e lista de bens vinculáveis a apólices de auto/residencial/empresarial), Família (parentes até 2º grau, vínculo invertido automático) e Saúde (peso, altura, IMC) |
 | `/corretoras/[corretoraId]/apolices` (+ `nova`, `[apoliceId]`, `[apoliceId]/editar`) | `apolices/ApolicesPage.tsx`, `_components/ApoliceForm.tsx`, `[apoliceId]/ApoliceDetail.tsx` | Carteira: lista com filtros, cadastro (bem segurado por ramo, coberturas, parcelas), detalhe com abas Parcelas/Endossos/Sinistros/Anexos |
 | `/corretoras/[corretoraId]/sinistros` (+ `novo`, `[sinistroId]`) | `sinistros/SinistrosPage.tsx`, `novo/NovoSinistroForm.tsx`, `[sinistroId]/SinistroDetail.tsx` | Sinistros com status por ramo e histórico de andamentos |
 | `/corretoras/[corretoraId]/configuracoes` | `configuracoes/ConfiguracoesPage.tsx` | Dias de antecedência e etapa do funil da renovação automática |
@@ -38,7 +38,7 @@ CRM/ERP para corretoras de seguros, multi-tenant (uma conta pode ter múltiplas 
 
 ## Server Actions
 - `app/lib/actions.ts` — `criarConta`, `atualizarDadosCorretora`, `salvarRamosAtuacao`, `salvarFluxoVendas`, `selecionarPlano`, `concluirOnboarding`, `definirFunilAtivo`, `buscarContatos`, `criarNegocio`, `moverNegocio`, `atualizarNegocio`, `atualizarContato`, `deletarNegocio`, `marcarNegocioPerdido`, `reabrirNegocio`
-- `app/lib/actions-contatos.ts` — `atualizarFichaContato`, `adicionarVinculo`, `removerVinculo`
+- `app/lib/actions-contatos.ts` — `atualizarFichaContato`, `adicionarVinculo`, `removerVinculo`, `salvarBemPatrimonio`, `removerBemPatrimonio`, `vincularBemApolice`, `desvincularBemApolice`, `salvarSaude`
 - `app/lib/actions-seguros.ts` — `criarApolice`, `atualizarApolice`, `cancelarApolice`, `adicionarParcelas`, `atualizarParcela`, `darBaixaManual`, `criarEndosso`, `listarAnexosApolice`, `uploadAnexoApolice`, `deletarAnexoApolice`, `criarSinistro`, `atualizarSinistro`, `registrarAndamento`, `atualizarConfiguracoesCorretora`
 - Regras puras (testadas com Vitest) em `app/lib/seguros/`: ramos, datas, parcelas, status, sinistros, renovação, validação, mensagens de erro, tipos.
 - `app/auth/actions.ts` — `signIn`, `createNewUser`
@@ -46,6 +46,8 @@ CRM/ERP para corretoras de seguros, multi-tenant (uma conta pode ter múltiplas 
 
 ## Banco de dados (Supabase)
 Hierarquia: `planos` → `contas` (dono = `owner_usuario_id`) → `corretoras` → `fluxos` → `etapas` → `negocios`. `corretoras` também tem `contatos` (pessoas cadastradas) — `negocios.contato_id` referencia `contatos`, `negocios.vendedor_usuario_id` referencia `usuarios`. `usuarios` espelha `auth.users` (criado via trigger `handle_new_user`).
+
+Patrimônio: `contato_bens` (imóvel/veículo/outro) ↔ `contato_bem_apolices` (vínculo manual; FKs com `contato_id` garantem que a apólice é do mesmo cliente). Saúde: `contato_saude` (1:1, tabela separada por ser dado sensível — LGPD).
 
 Família: `contato_vinculos` (corretora_id, contato_id, parente_id, parentesco) grava o vínculo **uma vez** ("parente é X do contato"); o lado inverso é derivado em `app/lib/contatos/parentesco.ts` (`parentescoInverso`, `parentesDoContato`). Índice único no par (qualquer sentido) e FKs compostas `(id, corretora_id)` garantem mesma corretora.
 

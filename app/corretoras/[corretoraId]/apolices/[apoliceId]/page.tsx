@@ -29,6 +29,11 @@ export default async function Page({
         supabase.from("sinistros").select("id, data_ocorrencia, tipo, status, numero_seguradora").eq("apolice_id", apoliceId).order("data_ocorrencia", { ascending: false }),
     ]);
 
+    const { data: bensVinculados } = await supabase
+        .from("contato_bem_apolices")
+        .select("bem:contato_bens(id, descricao, tipo)")
+        .eq("apolice_id", apoliceId);
+
     let anterior: { id: string; numero: string } | null = null;
     if (carregado.form.apoliceAnteriorId) {
         const { data } = await supabase.from("apolices").select("id, numero").eq("id", carregado.form.apoliceAnteriorId).maybeSingle();
@@ -70,6 +75,9 @@ export default async function Page({
             coberturasEndosso={(coberturasEndosso ?? []) as Cobertura[]}
             sinistros={sinistrosLinhas}
             abaInicial={aba ?? "resumo"}
+            bensPatrimonio={((bensVinculados ?? []) as unknown as { bem: { id: string; descricao: string; tipo: string } | null }[])
+                .map((l) => l.bem)
+                .filter((b): b is { id: string; descricao: string; tipo: string } => !!b)}
         />
     );
 }

@@ -1,7 +1,7 @@
 'use client';
 import TextField, { type TextFieldProps } from "@mui/material/TextField";
 import InputAdornment from "@mui/material/InputAdornment";
-import { formatMoeda, formatPercentual, mascaraMoeda, mascaraPercentual } from "@/app/corretoras/[corretoraId]/funis/masks";
+import { formatDecimal, formatMoeda, formatPercentual, mascaraDecimal, mascaraMoeda, mascaraPercentual } from "@/app/corretoras/[corretoraId]/funis/masks";
 
 type Props = { valor: number | null; onValor: (n: number | null) => void } & Omit<TextFieldProps, "value" | "onChange">;
 
@@ -30,6 +30,29 @@ export function CampoPercentual({ valor, onValor, slotProps, ...props }: Props) 
             slotProps={{
                 ...slotProps,
                 input: { endAdornment: <InputAdornment position="end">%</InputAdornment> },
+                htmlInput: { inputMode: "numeric" },
+            }}
+        />
+    );
+}
+
+export function CampoDecimal({
+    valor,
+    onValor,
+    casas,
+    maxDigitos,
+    sufixo,
+    slotProps,
+    ...props
+}: Props & { casas: number; maxDigitos: number; sufixo: string }) {
+    return (
+        <TextField
+            {...props}
+            value={formatDecimal(valor, casas)}
+            onChange={(e) => onValor(mascaraDecimal(e.target.value, casas, maxDigitos).valor)}
+            slotProps={{
+                ...slotProps,
+                input: { endAdornment: <InputAdornment position="end">{sufixo}</InputAdornment> },
                 htmlInput: { inputMode: "numeric" },
             }}
         />

@@ -147,6 +147,12 @@ Spec completo: [`superpowers/specs/2026-10-02-base-seguros-design.md`](superpowe
 - **Pessoa jurídica** mostra só as informações principais; estado civil, financeiro e família são de pessoa física (a action limpa esses campos se o contato virar PJ).
 - **Patrimônio imobilizado** = imóveis, veículos e outros bens; **financeiro** = investimentos e aplicações.
 
+## Ficha do contato em abas, patrimônio e saúde
+
+- **Patrimônio imobilizado virou lista de bens** (imóvel, veículo, outro) com valor estimado; o total é a soma. Cada bem mostra se está **Segurado**, com **Seguro vencido** ou **Sem seguro** — oportunidade de venda visível na ficha.
+- **Vínculo bem ↔ apólice é manual** (decisão do Mitz), muitos-para-muitos (renovações e frotas), só ramos automóvel, residencial e empresarial. Ligar automaticamente pela placa/endereço ao cadastrar a apólice ficou para depois, se fizer sentido.
+- **Saúde em tabela própria** (`contato_saude`): é dado sensível pela LGPD e, quando houver equipe, vai ser preciso restringir quem vê. IMC calculado no código (faixas da OMS), não guardado.
+
 ## Pendências técnicas conhecidas
 
 1. **`contas` sem policy de `UPDATE`** — `selecionarPlano` está quebrado (RLS bloqueia a troca de plano, silenciosamente, sem erro visível). Precisa de uma policy tipo:

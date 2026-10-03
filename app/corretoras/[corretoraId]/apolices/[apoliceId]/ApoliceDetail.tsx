@@ -57,6 +57,7 @@ export default function ApoliceDetail(props: {
     coberturasEndosso: Cobertura[];
     sinistros: SinistroLinha[];
     abaInicial: string;
+    bensPatrimonio: { id: string; descricao: string; tipo: string }[];
 }) {
     const { corretoraId, apoliceId, form } = props;
     const router = useRouter();
@@ -119,6 +120,16 @@ export default function ApoliceDetail(props: {
                                 </Typography>
                             ))}
                         </Box>
+                        {props.bensPatrimonio.length > 0 && (
+                            <Campo
+                                rotulo="Bens do patrimônio do cliente"
+                                valor={
+                                    <Link component={NextLink} href={`${base}/contatos/${props.contato.id}?aba=financeiro`}>
+                                        {props.bensPatrimonio.map((b) => b.descricao).join(", ")}
+                                    </Link>
+                                }
+                            />
+                        )}
                         <Stack direction="row" spacing={3} sx={{ flexWrap: "wrap" }}>
                             {form.negocioOrigemId && <Link component={NextLink} href={`${base}/funis?negocio=${form.negocioOrigemId}`}>Ver negócio de origem</Link>}
                             {props.anterior && <Link component={NextLink} href={`${base}/apolices/${props.anterior.id}`}>Apólice anterior ({props.anterior.numero})</Link>}
